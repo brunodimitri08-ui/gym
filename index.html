@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Workout Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Manifest PWA -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Colore barra superiore iPhone -->
+    <meta name="theme-color" content="#111">
+
+    <!-- Stile -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Icone iOS -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+
+<body>
+
+    <!-- ===== HEADER APP ===== -->
+    <div id="app-header">
+        <h1 id="app-title">Workout</h1>
+
+        <div id="day-buttons">
+            <button onclick="loadDay(1)">Giorno 1</button>
+            <button onclick="loadDay(2)">Giorno 2</button>
+            <button onclick="loadDay(3)">Giorno 3</button>
+        </div>
+    </div>
+
+    <!-- ===== LISTA ESERCIZI ===== -->
+    <div id="exercise-list"></div>
+
+    <!-- Script principale -->
+    <script src="app.js"></script>
+
+    <!-- Avvio automatico Giorno 1 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            loadDay(1);
+        });
+    </script>
+
+    <!-- Registrazione Service Worker -->
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js");
+        }
+    </script>
+
+</body>
+</html>
