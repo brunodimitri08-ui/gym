@@ -1,3 +1,9 @@
+/* ==========================================================
+   WORKOUT APP — STYLE.CSS
+   Versione: 1.2.0
+   Ultima modifica: 16/05/2026
+   ========================================================== */
+
 /* ============================
    STRUTTURA BASE APP
 ============================ */
@@ -9,19 +15,31 @@ body {
     font-family: Arial, sans-serif;
 }
 
+/* HEADER PULITO */
 #app-header {
-    padding: 20px;
+    padding: 20px 0;
     text-align: center;
-    background: #111;
-    border-bottom: 1px solid #333;
+    background: transparent;
+    border: none;
+}
+
+#app-header h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+/* BOTTONI GIORNI */
+#day-buttons {
+    text-align: center;
+    margin-bottom: 10px;
 }
 
 #day-buttons button {
     margin: 5px;
-    padding: 12px 20px;
+    padding: 10px 18px;
     border-radius: 10px;
-    border: none;
-    background: #222;
+    border: 1px solid #444;
+    background: transparent;
     color: white;
     font-size: 16px;
 }
@@ -31,68 +49,32 @@ body {
 ============================ */
 .exercise {
     background: #111;
-    margin: 15px;
-    padding: 15px;
-    border-radius: 12px;
+    margin: 10px 15px;
+    padding: 10px 14px;
+    border-radius: 10px;
     border: 1px solid #333;
 }
 
+/* TITOLO ESERCIZIO */
 .exercise-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    margin-top: 5px;
+    margin-bottom: 15px;
 }
 
-/* ============================
-   INPUT TITOLO — FIX DEFINITIVO
-============================ */
-.exercise-header input {
-    width: 100% !important;
-    padding: 14px !important;
-    margin: 0 !important;
-    border-radius: 10px !important;
-    border: 1px solid #444 !important;
-    background: #111 !important;
-    color: white !important;
-    font-size: 16px !important;
-    box-sizing: border-box !important;
-
-    appearance: none !important;
-    -webkit-appearance: none !important;
-}
-
-/* ============================
-   DELETE BUTTON — VERSIONE FUNZIONANTE
-============================ */
-.delete-btn {
-    background: none !important;
-    border: none !important;
-    color: #ff4444 !important;
-    cursor: pointer !important;
-
-    /* dimensioni REALMENTE strette */
-    font-size: 16px !important;
-    padding: 0 !important;
-    margin-left: 10px !important;
-
-    width: 22px !important;
-    height: 22px !important;
-    min-width: 22px !important;
-    max-width: 22px !important;
-
-    line-height: 22px !important;
-    text-align: center !important;
-
-    /* Safari fix */
-    flex: 0 0 22px !important;
+.exercise-header h2 {
+    font-size: 18px;
+    margin: 0;
+    padding: 4px 0;
 }
 
 /* ============================
    SERIE E TIMER
 ============================ */
 .series {
-    margin-top: 15px;
+    margin-top: 10px;
     padding: 10px;
     background: #1a1a1a;
     border-radius: 10px;
@@ -118,8 +100,41 @@ body {
 }
 
 /* ============================
-   INPUT SERIE / RIPETIZIONI / RECUPERO
+   EDIT MODE
 ============================ */
+.edit-mode {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 15px;
+}
+
+/* HEADER DEL RIQUADRO DI MODIFICA */
+.edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.edit-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+/* ❌ IN ALTO A DESTRA */
+.edit-header .delete-btn {
+    font-size: 22px;
+    color: #ff4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+/* INPUT MODIFICA */
 .edit-body input {
     width: 100% !important;
     padding: 14px !important;
@@ -130,9 +145,6 @@ body {
     color: white !important;
     font-size: 16px !important;
     box-sizing: border-box !important;
-
-    appearance: none !important;
-    -webkit-appearance: none !important;
 }
 
 /* ============================
@@ -154,30 +166,18 @@ body {
     margin-right: auto;
 }
 
-/* DISTANZA TRA I PULSANTI */
 .save-btn {
-    margin-top: 50px;
-    margin-bottom: 50px;
+    margin-top: 20px;
+    margin-bottom: 15px;
 }
 
 .add-btn {
-    margin-top: 50px;
-    margin-bottom: 50px;
+    margin-top: 15px;
+    margin-bottom: 15px;
 }
 
 .cancel-btn {
-    margin-top: 50px;
-    margin-bottom: 100px;
-}
-
-/* ============================
-   RIQUADRO MODIFICA
-============================ */
-.edit-mode {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    padding: 20px;
-    border-radius: 12px;
+    margin-top: 15px;
     margin-bottom: 40px;
 }
 

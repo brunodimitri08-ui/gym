@@ -1,82 +1,67 @@
+/* ==========================================================
+   WORKOUT APP — APP.JS
+   Versione: 2.2 — ID Unici + Edit Mode Completo
+   Ultima modifica: 15/05/2026
+   ========================================================== */
+
 /* ============================
-   VERSION CHECK (AUTO UPDATE)
+   GENERA ID UNICO
 ============================ */
-async function checkVersion() {
-    try {
-        const response = await fetch("/gym/version.json", { cache: "no-store" });
-        const text = await response.text();
-
-        const hash = btoa(text);
-        const localVersion = localStorage.getItem("app_version");
-
-        if (localVersion !== hash) {
-            localStorage.setItem("app_version", hash);
-
-            if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({ action: "skipWaiting" });
-            }
-
-            location.reload();
-        }
-    } catch (e) {
-        console.log("Version check failed", e);
-    }
+function newId() {
+    return crypto.randomUUID();
 }
 
-checkVersion();
-setInterval(checkVersion, 5000);
-
 /* ============================
-   WORKOUT DATA
+   WORKOUTS CON ID AUTOMATICI
 ============================ */
 const workouts = {
     1: [
-        { name: "Panca piana bilanciere", series: 4, reps: 8, rest: 120 },
-        { name: "Panca inclinata manubri", series: 3, reps: 10, rest: 90 },
-        { name: "Chest press / Croci / Butterfly", series: 3, reps: 12, rest: 75 },
-        { name: "Military press manubri", series: 3, reps: 10, rest: 90 },
-        { name: "Alzate laterali", series: 3, reps: 15, rest: 60 },
-        { name: "Tricipiti ai cavi", series: 3, reps: 15, rest: 60 },
-        { name: "French press", series: 2, reps: 12, rest: 75 }
+        { id: newId(), name: "Panca piana bilanciere", series: 4, reps: 8, rest: 120 },
+        { id: newId(), name: "Panca inclinata manubri", series: 3, reps: 10, rest: 90 },
+        { id: newId(), name: "Chest press / Croci / Butterfly", series: 3, reps: 12, rest: 75 },
+        { id: newId(), name: "Military press manubri", series: 3, reps: 10, rest: 90 },
+        { id: newId(), name: "Alzate laterali", series: 3, reps: 15, rest: 60 },
+        { id: newId(), name: "Tricipiti ai cavi", series: 3, reps: 15, rest: 60 },
+        { id: newId(), name: "French press", series: 2, reps: 12, rest: 75 }
     ],
     2: [
-        { name: "Lat machine", series: 4, reps: 8, rest: 120 },
-        { name: "Pulley basso", series: 4, reps: 10, rest: 120 },
-        { name: "Pulldown presa stretta", series: 3, reps: 12, rest: 90 },
-        { name: "Rematore macchina", series: 3, reps: 10, rest: 120 },
-        { name: "Curl bilanciere", series: 3, reps: 12, rest: 75 },
-        { name: "Curl manubri alternati", series: 2, reps: 14, rest: 60 },
-        { name: "Hammer curl", series: 3, reps: 12, rest: 75 }
+        { id: newId(), name: "Lat machine", series: 4, reps: 8, rest: 120 },
+        { id: newId(), name: "Pulley basso", series: 4, reps: 10, rest: 120 },
+        { id: newId(), name: "Pulldown presa stretta", series: 3, reps: 12, rest: 90 },
+        { id: newId(), name: "Rematore macchina", series: 3, reps: 10, rest: 120 },
+        { id: newId(), name: "Curl bilanciere", series: 3, reps: 12, rest: 75 },
+        { id: newId(), name: "Curl manubri alternati", series: 2, reps: 14, rest: 60 },
+        { id: newId(), name: "Hammer curl", series: 3, reps: 12, rest: 75 }
     ],
     3: [
-        { name: "Squat", series: 4, reps: 8, rest: 120 },
-        { name: "Leg press", series: 4, reps: 12, rest: 120 },
-        { name: "Leg curl", series: 3, reps: 15, rest: 75 },
-        { name: "Chest press leggera", series: 2, reps: 15, rest: 60 },
-        { name: "Pulley basso neutra", series: 2, reps: 15, rest: 60 },
-        { name: "Addome", series: 3, reps: 15, rest: 60 }
+        { id: newId(), name: "Squat", series: 4, reps: 8, rest: 120 },
+        { id: newId(), name: "Leg press", series: 4, reps: 12, rest: 120 },
+        { id: newId(), name: "Leg curl", series: 3, reps: 15, rest: 75 },
+        { id: newId(), name: "Chest press leggera", series: 2, reps: 15, rest: 60 },
+        { id: newId(), name: "Pulley basso neutra", series: 2, reps: 15, rest: 60 },
+        { id: newId(), name: "Addome", series: 3, reps: 15, rest: 60 }
     ]
 };
 
 /* ============================
-   CARICAMENTO GIORNO
+   CARICA GIORNO
 ============================ */
 function loadDay(day) {
     const container = document.getElementById("exercise-list");
     container.innerHTML = "";
 
-    workouts[day].forEach((ex, idx) => {
+    workouts[day].forEach((ex) => {
 
         const wrapper = document.createElement("div");
         wrapper.className = "exercise";
 
         wrapper.innerHTML = `
-            <div class="exercise-header" onclick="toggleExercise(${day}, ${idx})">
+            <div class="exercise-header" onclick="toggleExercise('${ex.id}')">
                 <h2>${ex.name}</h2>
-                <span id="check-${day}-${idx}" class="exercise-check"></span>
+                <span id="check-${ex.id}" class="exercise-check"></span>
             </div>
 
-            <div class="exercise-body" id="exercise-body-${day}-${idx}" style="display:none;">
+            <div class="exercise-body" id="exercise-body-${ex.id}" style="display:none;">
                 <p>${ex.series} serie × ${ex.reps} ripetizioni</p>
                 <p>Recupero: ${ex.rest} sec</p>
             </div>
@@ -99,18 +84,22 @@ function loadDay(day) {
 
                 <br><br>
 
-                Kg: <input id="kg-${day}-${idx}-${i}" type="number">
-                <button class="btn-icon btn-save" onclick="saveKg(${day}, ${idx}, ${i})">Salva</button>
+                <div class="kg-row">
+                    <label>Kg:</label>
+                    <input id="kg-${ex.id}-${i}" type="number">
+                    <button class="btn-icon btn-save" onclick="saveKg('${ex.id}', ${i})">Salva</button>
+                </div>
 
-                <span id="lastkg-${day}-${idx}-${i}" class="lastkg"></span>
+                <div id="lastkg-${ex.id}-${i}" class="lastkg"></div>
+
             `;
 
             body.appendChild(seriesDiv);
         }
 
         setTimeout(() => {
-            loadLastKg(day, idx);
-            updateExerciseCheck(day, idx);
+            loadLastKg(ex.id);
+            updateExerciseCheck(ex.id);
         }, 0);
 
         container.appendChild(wrapper);
@@ -124,133 +113,87 @@ function loadDay(day) {
 }
 
 /* ============================
-   TENDINA
+   TOGGLE
 ============================ */
-function toggleExercise(day, idx) {
-    const body = document.getElementById(`exercise-body-${day}-${idx}`);
+function toggleExercise(id) {
+    const body = document.getElementById(`exercise-body-${id}`);
     body.style.display = body.style.display === "none" ? "block" : "none";
-}
-
-/* ============================
-   TIMER
-============================ */
-function startTimer(seconds, btn) {
-    const parent = btn.parentElement;
-
-    if (parent.timerInterval) return;
-
-    const timerSpan = parent.querySelector(".timer");
-
-    let totalMs = seconds * 1000;
-
-    parent.timerInterval = setInterval(() => {
-        totalMs -= 10;
-
-        if (totalMs <= 0) {
-            clearInterval(parent.timerInterval);
-            parent.timerInterval = null;
-            timerSpan.textContent = "✔️ Fine recupero";
-            return;
-        }
-
-        const sec = Math.floor(totalMs / 1000);
-        const ms = Math.floor((totalMs % 1000) / 10);
-
-        timerSpan.textContent = `⏱️ ${sec}.${ms.toString().padStart(2, "0")}`;
-
-    }, 10);
-}
-
-function stopTimer(btn) {
-    const parent = btn.parentElement;
-
-    if (parent.timerInterval) {
-        clearInterval(parent.timerInterval);
-        parent.timerInterval = null;
-    }
-}
-
-function resetTimer(seconds, btn) {
-    const parent = btn.parentElement;
-
-    if (parent.timerInterval) {
-        clearInterval(parent.timerInterval);
-        parent.timerInterval = null;
-    }
-
-    const timerSpan = parent.querySelector(".timer");
-    timerSpan.textContent = `⏱️ ${seconds}.00`;
 }
 
 /* ============================
    SALVATAGGIO KG
 ============================ */
-function saveKg(day, exIndex, series) {
+function saveKg(exId, series) {
     const key = "kgHistory";
     const data = JSON.parse(localStorage.getItem(key)) || {};
-
     const today = new Date().toISOString().split("T")[0];
-    const input = document.getElementById(`kg-${day}-${exIndex}-${series}`);
-    const kg = Number(input.value);
 
-    if (!kg) return;
+    if (!data[exId]) data[exId] = {};
+    if (!data[exId][series]) data[exId][series] = [];
 
-    if (!data[day]) data[day] = {};
-    if (!data[day][exIndex]) data[day][exIndex] = {};
-    if (!data[day][exIndex][series]) data[day][exIndex][series] = [];
+    const input = document.getElementById(`kg-${exId}-${series}`);
+    const kgValue = input.value;
 
-    data[day][exIndex][series].push({
-        kg: kg,
+    if (!kgValue) return;
+
+    data[exId][series].push({
+        kg: kgValue,
         date: today
     });
 
     localStorage.setItem(key, JSON.stringify(data));
 
-    loadLastKg(day, exIndex);
-    updateExerciseCheck(day, exIndex);
+    loadLastKg(exId);
+    updateExerciseCheck(exId);
 }
 
 /* ============================
-   MOSTRA ULTIMO KG
+   CARICA ULTIMO KG
 ============================ */
-function loadLastKg(day, exIndex) {
+function loadLastKg(exId) {
     const key = "kgHistory";
     const data = JSON.parse(localStorage.getItem(key)) || {};
 
-    if (!data[day] || !data[day][exIndex]) return;
+    if (!data[exId]) return;
 
-    const seriesData = data[day][exIndex];
+    const exercise = findExerciseById(exId);
+    if (!exercise) return;
 
-    Object.keys(seriesData).forEach(series => {
-        const entries = seriesData[series];
-        const last = entries[entries.length - 1];
+    for (let s = 1; s <= exercise.series; s++) {
+        const span = document.getElementById(`lastkg-${exId}-${s}`);
+        if (!span) continue;
 
-        const span = document.getElementById(`lastkg-${day}-${exIndex}-${series}`);
-        if (span) {
-            span.textContent = `Ultimo: ${last.kg} kg (${last.date})`;
+        const seriesData = data[exId][s];
+        if (!seriesData || seriesData.length === 0) {
+            span.textContent = "";
+            continue;
         }
-    });
 
-    updateExerciseCheck(day, exIndex);
+        const last = seriesData[seriesData.length - 1];
+        span.textContent = `Ultimo: ${last.kg}kg (${last.date})`;
+    }
+
+    updateExerciseCheck(exId);
 }
 
 /* ============================
-   SPUNTA COMPLETAMENTO
+   SPUNTA ✔️
 ============================ */
-function updateExerciseCheck(day, exIndex) {
+function updateExerciseCheck(exId) {
     const key = "kgHistory";
     const data = JSON.parse(localStorage.getItem(key)) || {};
     const today = new Date().toISOString().split("T")[0];
 
-    const exercise = workouts[day][exIndex];
+    const exercise = findExerciseById(exId);
+    if (!exercise) return;
+
     const totalSeries = exercise.series;
-
-    if (!data[day] || !data[day][exIndex]) return;
-
     let completed = 0;
 
+    if (!data[exId]) return;
+
     for (let s = 1; s <= totalSeries; s++) {
-        const seriesData = data[day][exIndex][s];
+        const seriesData = data[exId][s];
         if (!seriesData) continue;
 
         const last = seriesData[seriesData.length - 1];
@@ -259,52 +202,71 @@ function updateExerciseCheck(day, exIndex) {
         }
     }
 
-    const checkSpan = document.getElementById(`check-${day}-${exIndex}`);
+    const checkSpan = document.getElementById(`check-${exId}`);
+    if (!checkSpan) return;
 
     if (completed === totalSeries) {
+        checkSpan.textContent = "✔️";
         checkSpan.classList.add("done");
     } else {
+        checkSpan.textContent = "";
         checkSpan.classList.remove("done");
     }
 }
 
 /* ============================
-   MODALITÀ MODIFICA
+   TROVA ESERCIZIO PER ID
+============================ */
+function findExerciseById(id) {
+    for (const day in workouts) {
+        for (const ex of workouts[day]) {
+            if (ex.id === id) return ex;
+        }
+    }
+    return null;
+}
+
+/* ============================
+   EDIT MODE — VERSIONE COMPLETA
 ============================ */
 function enterEditMode(day) {
     const container = document.getElementById("exercise-list");
     container.innerHTML = "";
 
-    workouts[day].forEach((ex, idx) => {
-        const div = document.createElement("div");
-        div.className = "exercise edit-mode";
+    workouts[day].forEach(ex => {
+        const box = document.createElement("div");
+        box.className = "edit-mode";
 
-        div.innerHTML = `
-            <div class="exercise-header">
-                <input type="text" id="edit-name-${idx}" value="${ex.name}">
-                <button class="delete-btn" onclick="deleteExercise(${day}, ${idx})">❌</button>
+        box.innerHTML = `
+            <div class="edit-header">
+                <h3>${ex.name}</h3>
+                <button class="delete-btn" onclick="deleteExerciseById('${ex.id}', ${day})">❌</button>
             </div>
 
-            <div class="exercise-body edit-body">
-                Serie: <input type="number" id="edit-series-${idx}" value="${ex.series}"><br>
-                Ripetizioni: <input type="number" id="edit-reps-${idx}" value="${ex.reps}"><br>
-                Recupero (sec): <input type="number" id="edit-rest-${idx}" value="${ex.rest}">
+            <div class="edit-body">
+                <label>Nome esercizio</label>
+                <input type="text" id="edit-name-${ex.id}" value="${ex.name}">
+
+                <label>Serie</label>
+                <input type="number" id="edit-series-${ex.id}" value="${ex.series}">
+
+                <label>Ripetizioni</label>
+                <input type="number" id="edit-reps-${ex.id}" value="${ex.reps}">
+
+                <label>Recupero (sec)</label>
+                <input type="number" id="edit-rest-${ex.id}" value="${ex.rest}">
             </div>
+
+            <button class="save-btn" onclick="saveEditMode('${ex.id}', ${day})">Salva modifiche</button>
         `;
 
-        container.appendChild(div);
+        container.appendChild(box);
     });
-
-    const saveBtn = document.createElement("button");
-    saveBtn.textContent = "Salva modifiche";
-    saveBtn.className = "save-btn";
-    saveBtn.onclick = () => saveChanges(day);
-    container.appendChild(saveBtn);
 
     const addBtn = document.createElement("button");
     addBtn.textContent = "Aggiungi esercizio";
     addBtn.className = "add-btn";
-    addBtn.onclick = () => addExercise(day);
+    addBtn.onclick = () => addNewExercise(day);
     container.appendChild(addBtn);
 
     const cancelBtn = document.createElement("button");
@@ -315,59 +277,95 @@ function enterEditMode(day) {
 }
 
 /* ============================
-   ELIMINA ESERCIZIO + RESET DATI
-============================ */
-function deleteExercise(day, idx) {
-    workouts[day].splice(idx, 1);
-
-    const key = "kgHistory";
-    const data = JSON.parse(localStorage.getItem(key)) || {};
-
-    if (data[day] && data[day][idx]) {
-        delete data[day][idx];
-    }
-
-    if (data[day]) {
-        const newDayData = {};
-        let newIndex = 0;
-
-        Object.keys(data[day]).sort().forEach(oldIndex => {
-            newDayData[newIndex] = data[day][oldIndex];
-            newIndex++;
-        });
-
-        data[day] = newDayData;
-    }
-
-    localStorage.setItem(key, JSON.stringify(data));
-
-    enterEditMode(day);
-}
-
-/* ============================
    SALVA MODIFICHE
 ============================ */
-function saveChanges(day) {
-    workouts[day].forEach((ex, idx) => {
-        ex.name = document.getElementById(`edit-name-${idx}`).value;
-        ex.series = Number(document.getElementById(`edit-series-${idx}`).value);
-        ex.reps = Number(document.getElementById(`edit-reps-${idx}`).value);
-        ex.rest = Number(document.getElementById(`edit-rest-${idx}`).value);
-    });
+function saveEditMode(exId, day) {
+    const ex = findExerciseById(exId);
+    if (!ex) return;
+
+    ex.name = document.getElementById(`edit-name-${exId}`).value;
+    ex.series = parseInt(document.getElementById(`edit-series-${exId}`).value);
+    ex.reps = parseInt(document.getElementById(`edit-reps-${exId}`).value);
+    ex.rest = parseInt(document.getElementById(`edit-rest-${exId}`).value);
 
     loadDay(day);
 }
 
 /* ============================
-   AGGIUNGI ESERCIZIO
+   AGGIUNGI NUOVO ESERCIZIO
 ============================ */
-function addExercise(day) {
-    workouts[day].push({
+function addNewExercise(day) {
+    const newEx = {
+        id: newId(),
         name: "Nuovo esercizio",
         series: 3,
         reps: 10,
         rest: 60
-    });
+    };
 
+    workouts[day].push(newEx);
     enterEditMode(day);
+}
+
+/* ============================
+   ELIMINA ESERCIZIO
+============================ */
+function deleteExerciseById(exId, day) {
+    workouts[day] = workouts[day].filter(ex => ex.id !== exId);
+    enterEditMode(day);
+}
+/* ============================
+   TIMER CON MILLISECONDI (2 cifre)
+============================ */
+
+function startTimer(restSeconds, btn) {
+    const seriesDiv = btn.closest(".series");
+    const timerSpan = seriesDiv.querySelector(".timer");
+
+    // Se esiste già un timer attivo, non avviarne un altro
+    if (seriesDiv._timerInterval) return;
+
+    // Tempo totale in millisecondi
+    let totalMs = seriesDiv._currentMs ?? restSeconds * 1000;
+
+    seriesDiv._currentMs = totalMs;
+
+    seriesDiv._timerInterval = setInterval(() => {
+        totalMs -= 10; // aggiorna ogni 10 ms
+        if (totalMs <= 0) {
+            totalMs = 0;
+            clearInterval(seriesDiv._timerInterval);
+            seriesDiv._timerInterval = null;
+        }
+
+        seriesDiv._currentMs = totalMs;
+
+        const sec = Math.floor(totalMs / 1000);
+        const cs = Math.floor((totalMs % 1000) / 10); // centisecondi (00–99)
+
+        timerSpan.textContent = `⏱️ ${sec}.${cs.toString().padStart(2, "0")}`;
+    }, 10);
+}
+
+function stopTimer(btn) {
+    const seriesDiv = btn.closest(".series");
+    if (seriesDiv._timerInterval) {
+        clearInterval(seriesDiv._timerInterval);
+        seriesDiv._timerInterval = null;
+    }
+}
+
+function resetTimer(restSeconds, btn) {
+    const seriesDiv = btn.closest(".series");
+    const timerSpan = seriesDiv.querySelector(".timer");
+
+    if (seriesDiv._timerInterval) {
+        clearInterval(seriesDiv._timerInterval);
+        seriesDiv._timerInterval = null;
+    }
+
+    const totalMs = restSeconds * 1000;
+    seriesDiv._currentMs = totalMs;
+
+    timerSpan.textContent = `⏱️ ${restSeconds}.00`;
 }
