@@ -271,7 +271,7 @@ function enterEditMode(day) {
 
     const saveAllBtn = document.createElement("button");
     saveAllBtn.textContent = "Salva";
-    saveAllBtn.className = "cancel-btn"; // stesso stile di Annulla
+    saveAllBtn.className = "cancel-btn"; 
     saveAllBtn.onclick = () => saveAllExercises(day);
     container.appendChild(saveAllBtn);
 
@@ -378,10 +378,29 @@ function resetTimer(restSeconds, btn) {
 }
 
 function saveAllExercises(day) {
+    console.log("Salvataggio completo per giorno:", day);
+
+    // 1️⃣ Salva le modifiche agli esercizi (nome, serie, reps, rest)
+    const exercises = workouts[day];
+
+    exercises.forEach((ex, exIndex) => {
+        const nameInput = document.getElementById(`edit-name-${ex.id}`);
+        const seriesInput = document.getElementById(`edit-series-${ex.id}`);
+        const repsInput = document.getElementById(`edit-reps-${ex.id}`);
+        const restInput = document.getElementById(`edit-rest-${ex.id}`);
+
+        if (nameInput) ex.name = nameInput.value.trim();
+        if (seriesInput) ex.series = parseInt(seriesInput.value);
+        if (repsInput) ex.reps = parseInt(repsInput.value);
+        if (restInput) ex.rest = parseInt(restInput.value);
+    });
+
+    // Salva gli esercizi aggiornati
+    localStorage.setItem("workouts", JSON.stringify(workouts));
+
+    // 2️⃣ Salva i kg come prima
     const key = "kgHistory";
     const data = JSON.parse(localStorage.getItem(key)) || {};
-
-    const exercises = days[day].exercises;
 
     if (!data[day]) data[day] = {};
 
@@ -389,7 +408,9 @@ function saveAllExercises(day) {
         if (!data[day][exIndex]) data[day][exIndex] = {};
 
         for (let s = 1; s <= ex.series; s++) {
-            const input = document.getElementById(`kg-${day}-${exIndex}-${s}`);
+            const inputId = `kg-${day}-${exIndex}-${s}`;
+            const input = document.getElementById(inputId);
+
             if (!input) continue;
 
             const kg = input.value.trim();
@@ -403,16 +424,19 @@ function saveAllExercises(day) {
             });
         }
 
-        // aggiorna lo storico
-        loadExerciseHistory(day, exIndex);
+        if (typeof loadExerciseHistory === "function") {
+            loadExerciseHistory(day, exIndex);
+        }
 
-        // aggiorna il check verde
-        updateExerciseCompletion(day, exIndex);
+        if (typeof updateExerciseCompletion === "function") {
+            updateExerciseCompletion(day, exIndex);
+        }
     });
 
     localStorage.setItem(key, JSON.stringify(data));
 
-    // 🔥 esce automaticamente dalla modifica esercizi
+    console.log("Salvataggio completato. Ricarico il giorno:", day);
+
+    // 3️⃣ Esce dalla modalità modifica
     loadDay(day);
 }
-
