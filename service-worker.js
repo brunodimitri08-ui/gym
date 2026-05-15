@@ -1,6 +1,6 @@
 let CACHE_NAME = "workout-cache";
 
-// Durante l'installazione, carica gli asset
+// Installazione: cache degli asset
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -19,15 +19,15 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 });
 
-// Attivazione: elimina vecchie cache se cambia la versione
+// Attivazione
 self.addEventListener("activate", event => {
   event.waitUntil(self.clients.claim());
 });
 
-// Fetch con auto-update della cache
+// Fetch con auto-update
 self.addEventListener("fetch", event => {
   if (event.request.url.includes("version.json")) {
-    return event.respondWith(fetch(event.request));
+    return event.respondWith(fetch(event.request, { cache: "no-store" }));
   }
 
   event.respondWith(
@@ -39,4 +39,11 @@ self.addEventListener("fetch", event => {
       })
       .catch(() => caches.match(event.request))
   );
+});
+
+// Messaggi dal client
+self.addEventListener("message", event => {
+  if (event.data.action === "skipWaiting") {
+    self.skipWaiting();
+  }
 });

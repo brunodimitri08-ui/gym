@@ -6,9 +6,7 @@ async function checkVersion() {
         const response = await fetch("/gym/version.json", { cache: "no-store" });
         const text = await response.text();
 
-        // Usa l'hash del contenuto come versione
         const hash = btoa(text);
-
         const localVersion = localStorage.getItem("app_version");
 
         if (localVersion !== hash) {
@@ -29,9 +27,8 @@ checkVersion();
 setInterval(checkVersion, 5000);
 
 /* ============================
-   IL TUO APP.JS ORIGINALE
+   WORKOUT DATA
 ============================ */
-
 const workouts = {
     1: [
         { name: "Panca piana bilanciere", series: 4, reps: 8, rest: 120 },
@@ -118,6 +115,12 @@ function loadDay(day) {
 
         container.appendChild(wrapper);
     });
+
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Modifica esercizi";
+    editBtn.className = "edit-btn";
+    editBtn.onclick = () => enterEditMode(day);
+    container.appendChild(editBtn);
 }
 
 /* ============================
@@ -129,7 +132,7 @@ function toggleExercise(day, idx) {
 }
 
 /* ============================
-   TIMER CON CENTESIMI
+   TIMER
 ============================ */
 function startTimer(seconds, btn) {
     const parent = btn.parentElement;
@@ -232,7 +235,7 @@ function loadLastKg(day, exIndex) {
 }
 
 /* ============================
-   SPUNTA DI COMPLETAMENTO
+   SPUNTA COMPLETAMENTO
 ============================ */
 function updateExerciseCheck(day, exIndex) {
     const key = "kgHistory";
@@ -263,4 +266,108 @@ function updateExerciseCheck(day, exIndex) {
     } else {
         checkSpan.classList.remove("done");
     }
+}
+
+/* ============================
+   MODALITÀ MODIFICA
+============================ */
+function enterEditMode(day) {
+    const container = document.getElementById("exercise-list");
+    container.innerHTML = "";
+
+    workouts[day].forEach((ex, idx) => {
+        const div = document.createElement("div");
+        div.className = "exercise edit-mode";
+
+        div.innerHTML = `
+            <div class="exercise-header">
+                <input type="text" id="edit-name-${idx}" value="${ex.name}">
+                <button class="delete-btn" onclick="deleteExercise(${day}, ${idx})">❌</button>
+            </div>
+
+            <div class="exercise-body edit-body">
+                Serie: <input type="number" id="edit-series-${idx}" value="${ex.series}"><br>
+                Ripetizioni: <input type="number" id="edit-reps-${idx}" value="${ex.reps}"><br>
+                Recupero (sec): <input type="number" id="edit-rest-${idx}" value="${ex.rest}">
+            </div>
+        `;
+
+        container.appendChild(div);
+    });
+
+    const saveBtn = document.createElement("button");
+    saveBtn.textContent = "Salva modifiche";
+    saveBtn.className = "save-btn";
+    saveBtn.onclick = () => saveChanges(day);
+    container.appendChild(saveBtn);
+
+    const addBtn = document.createElement("button");
+    addBtn.textContent = "Aggiungi esercizio";
+    addBtn.className = "add-btn";
+    addBtn.onclick = () => addExercise(day);
+    container.appendChild(addBtn);
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "Annulla";
+    cancelBtn.className = "cancel-btn";
+    cancelBtn.onclick = () => loadDay(day);
+    container.appendChild(cancelBtn);
+}
+
+/* ============================
+   ELIMINA ESERCIZIO + RESET DATI
+============================ */
+function deleteExercise(day, idx) {
+    workouts[day].splice(idx, 1);
+
+    const key = "kgHistory";
+    const data = JSON.parse(localStorage.getItem(key)) || {};
+
+    if (data[day] && data[day][idx]) {
+        delete data[day][idx];
+    }
+
+    if (data[day]) {
+        const newDayData = {};
+        let newIndex = 0;
+
+        Object.keys(data[day]).sort().forEach(oldIndex => {
+            newDayData[newIndex] = data[day][oldIndex];
+            newIndex++;
+        });
+
+        data[day] = newDayData;
+    }
+
+    localStorage.setItem(key, JSON.stringify(data));
+
+    enterEditMode(day);
+}
+
+/* ============================
+   SALVA MODIFICHE
+============================ */
+function saveChanges(day) {
+    workouts[day].forEach((ex, idx) => {
+        ex.name = document.getElementById(`edit-name-${idx}`).value;
+        ex.series = Number(document.getElementById(`edit-series-${idx}`).value);
+        ex.reps = Number(document.getElementById(`edit-reps-${idx}`).value);
+        ex.rest = Number(document.getElementById(`edit-rest-${idx}`).value);
+    });
+
+    loadDay(day);
+}
+
+/* ============================
+   AGGIUNGI ESERCIZIO
+============================ */
+function addExercise(day) {
+    workouts[day].push({
+        name: "Nuovo esercizio",
+        series: 3,
+        reps: 10,
+        rest: 60
+    });
+
+    enterEditMode(day);
 }
