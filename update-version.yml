@@ -16,7 +16,7 @@ jobs:
       - name: Read current version
         id: read_version
         run: |
-          CURRENT=$(jq -r '.version' version.json)
+          CURRENT=$(grep -oP '(?<="version": ")[^"]+' version.json)
           echo "current_version=$CURRENT" >> $GITHUB_ENV
 
       - name: Calculate next version (PATCH++)
