@@ -3,13 +3,16 @@
 ============================ */
 async function checkVersion() {
     try {
-        const response = await fetch("/gym/version.json");
-        const data = await response.json();
+        const response = await fetch("/gym/version.json", { cache: "no-store" });
+        const text = await response.text();
+
+        // Usa l'hash del contenuto come versione
+        const hash = btoa(text);
 
         const localVersion = localStorage.getItem("app_version");
 
-        if (localVersion !== data.version) {
-            localStorage.setItem("app_version", data.version);
+        if (localVersion !== hash) {
+            localStorage.setItem("app_version", hash);
 
             if (navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage({ action: "skipWaiting" });
