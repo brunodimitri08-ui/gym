@@ -269,6 +269,13 @@ function enterEditMode(day) {
     addBtn.onclick = () => addNewExercise(day);
     container.appendChild(addBtn);
 
+    const saveAllBtn = document.createElement("button");
+    saveAllBtn.textContent = "Salva";
+    saveAllBtn.className = "save-all-btn";
+    saveAllBtn.onclick = () => saveAllExercises(day);
+    container.appendChild(saveAllBtn);
+
+
     const cancelBtn = document.createElement("button");
     cancelBtn.textContent = "Annulla";
     cancelBtn.className = "cancel-btn";
@@ -369,3 +376,42 @@ function resetTimer(restSeconds, btn) {
 
     timerSpan.textContent = `⏱️ ${restSeconds}.00`;
 }
+
+function saveAllExercises(day) {
+    const key = "kgHistory";
+    const data = JSON.parse(localStorage.getItem(key)) || {};
+
+    const exercises = days[day].exercises;
+
+    if (!data[day]) data[day] = {};
+
+    exercises.forEach((ex, exIndex) => {
+        if (!data[day][exIndex]) data[day][exIndex] = {};
+
+        for (let s = 1; s <= ex.series; s++) {
+            const input = document.getElementById(`kg-${day}-${exIndex}-${s}`);
+            if (!input) continue;
+
+            const kg = input.value.trim();
+            if (kg === "") continue;
+
+            if (!data[day][exIndex][s]) data[day][exIndex][s] = [];
+
+            data[day][exIndex][s].push({
+                kg: kg,
+                date: new Date().toLocaleString()
+            });
+        }
+
+        // aggiorna lo storico
+        loadExerciseHistory(day, exIndex);
+
+        // aggiorna il check verde
+        updateExerciseCompletion(day, exIndex);
+    });
+
+    localStorage.setItem(key, JSON.stringify(data));
+
+    alert("Tutti gli esercizi sono stati salvati!");
+}
+
