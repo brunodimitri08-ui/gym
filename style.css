@@ -187,3 +187,18 @@ body {
 #exercise-list {
     padding-bottom: 150px;
 }
+/* Disabilita scrollbar verticale */
+body {
+    overflow-y: hidden;
+}
+
+/* Permette lo scroll solo del contenuto interno */
+#exercise-list {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Nasconde la scrollbar su iPhone e Android */
+#exercise-list::-webkit-scrollbar {
+    display: none;
+}
