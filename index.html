@@ -47,7 +47,16 @@
     <!-- Registrazione Service Worker -->
     <script>
         if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("service-worker.js");
+            navigator.serviceWorker.register("/gym/service-worker.js")
+                .then(reg => {
+                    if (reg.waiting) {
+                        reg.waiting.postMessage({ action: "skipWaiting" });
+                    }
+                });
+
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+                location.reload();
+            });
         }
     </script>
 

@@ -1,51 +1,42 @@
-// Cambia questo numero ogni volta che fai un update importante
-const CACHE_NAME = "workout-cache-v1";
+let CACHE_NAME = "workout-cache";
 
-// File da mettere in cache
-const ASSETS = [
-  "/gym/",                // homepage su GitHub Pages
-  "/gym/index.html",
-  "/gym/style.css",
-  "/gym/app.js",
-  "/gym/manifest.json",
-  "/gym/icon-192.png",
-  "/gym/icon-512.png"
-];
-
-// Installazione: cache dei file
+// Durante l'installazione, carica gli asset
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
+      return cache.addAll([
+        "/gym/",
+        "/gym/index.html",
+        "/gym/style.css",
+        "/gym/app.js",
+        "/gym/manifest.json",
+        "/gym/icon-192.png",
+        "/gym/icon-512.png",
+        "/gym/version.json"
+      ]);
     })
   );
-  self.skipWaiting(); // forza l'installazione immediata
+  self.skipWaiting();
 });
 
-// Attivazione: elimina vecchie cache
+// Attivazione: elimina vecchie cache se cambia la versione
 self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    )
-  );
-  self.clients.claim(); // aggiorna subito le pagine aperte
+  event.waitUntil(self.clients.claim());
 });
 
-// Fetch: network-first con fallback alla cache
+// Fetch con auto-update della cache
 self.addEventListener("fetch", event => {
+  if (event.request.url.includes("version.json")) {
+    return event.respondWith(fetch(event.request));
+  }
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // aggiorna la cache con la nuova versione
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
       })
-      .catch(() => caches.match(event.request)) // offline fallback
+      .catch(() => caches.match(event.request))
   );
 });

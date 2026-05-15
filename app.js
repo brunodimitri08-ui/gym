@@ -1,3 +1,34 @@
+/* ============================
+   VERSION CHECK (AUTO UPDATE)
+============================ */
+async function checkVersion() {
+    try {
+        const response = await fetch("/gym/version.json");
+        const data = await response.json();
+
+        const localVersion = localStorage.getItem("app_version");
+
+        if (localVersion !== data.version) {
+            localStorage.setItem("app_version", data.version);
+
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ action: "skipWaiting" });
+            }
+
+            location.reload();
+        }
+    } catch (e) {
+        console.log("Version check failed", e);
+    }
+}
+
+checkVersion();
+setInterval(checkVersion, 5000);
+
+/* ============================
+   IL TUO APP.JS ORIGINALE
+============================ */
+
 const workouts = {
     1: [
         { name: "Panca piana bilanciere", series: 4, reps: 8, rest: 120 },
