@@ -1,21 +1,25 @@
 /* ==========================================================
    WORKOUT APP — STYLE.CSS
-   Versione: 1.2.0
+   Versione: 1.3.0
    Ultima modifica: 16/05/2026
    ========================================================== */
 
 /* ============================
    STRUTTURA BASE APP
 ============================ */
-body {
+html, body {
     margin: 0;
     padding: 0;
     background: #000;
     color: #fff;
     font-family: Arial, sans-serif;
+
+    /* Blocca scroll globale */
+    height: 100%;
+    overflow: hidden;
 }
 
-/* HEADER PULITO */
+/* HEADER */
 #app-header {
     padding: 20px 0;
     text-align: center;
@@ -45,7 +49,24 @@ body {
 }
 
 /* ============================
-   LISTA ESERCIZI
+   LISTA ESERCIZI (scroll interno)
+============================ */
+#exercise-list {
+    position: relative;
+    height: calc(100vh - 140px); /* spazio per header + bottoni */
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Nascondi scrollbar su iPhone */
+#exercise-list::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+}
+
+/* ============================
+   RIQUADRI ESERCIZI
 ============================ */
 .exercise {
     background: #111;
@@ -55,7 +76,6 @@ body {
     border: 1px solid #333;
 }
 
-/* TITOLO ESERCIZIO */
 .exercise-header {
     display: flex;
     justify-content: space-between;
@@ -100,6 +120,36 @@ body {
 }
 
 /* ============================
+   KG + ULTIMO KG
+============================ */
+.kg-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.kg-row label {
+    font-size: 16px;
+}
+
+.kg-row input {
+    width: 70px;
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #111;
+    color: white;
+}
+
+.lastkg {
+    font-size: 14px;
+    color: #bbb;
+    margin-top: 4px;
+    padding-left: 2px;
+}
+
+/* ============================
    EDIT MODE
 ============================ */
 .edit-mode {
@@ -110,7 +160,6 @@ body {
     margin: 15px;
 }
 
-/* HEADER DEL RIQUADRO DI MODIFICA */
 .edit-header {
     display: flex;
     justify-content: space-between;
@@ -148,7 +197,7 @@ body {
 }
 
 /* ============================
-   PULSANTI MODIFICA
+   PULSANTI
 ============================ */
 .edit-btn,
 .save-btn,
@@ -179,26 +228,4 @@ body {
 .cancel-btn {
     margin-top: 15px;
     margin-bottom: 40px;
-}
-
-/* ============================
-   SCROLL FIX
-============================ */
-#exercise-list {
-    padding-bottom: 150px;
-}
-/* Disabilita scrollbar verticale */
-body {
-    overflow-y: hidden;
-}
-
-/* Permette lo scroll solo del contenuto interno */
-#exercise-list {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Nasconde la scrollbar su iPhone e Android */
-#exercise-list::-webkit-scrollbar {
-    display: none;
 }
