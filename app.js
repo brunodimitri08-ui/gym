@@ -271,7 +271,7 @@ function enterEditMode(day) {
 
     const saveAllBtn = document.createElement("button");
     saveAllBtn.textContent = "Salva";
-    saveAllBtn.className = "save-all-btn";
+    saveAllBtn.className = "cancel-btn"; // stesso stile di Annulla
     saveAllBtn.onclick = () => saveAllExercises(day);
     container.appendChild(saveAllBtn);
 
@@ -412,6 +412,7 @@ function saveAllExercises(day) {
 
     localStorage.setItem(key, JSON.stringify(data));
 
-    alert("Tutti gli esercizi sono stati salvati!");
+    // 🔥 esce automaticamente dalla modifica esercizi
+    loadDay(day);
 }
 

@@ -229,15 +229,3 @@ html, body {
     margin-top: 15px;
     margin-bottom: 40px;
 }
-.save-all-btn {
-    background-color: #00c853;
-    color: white;
-    padding: 12px 18px;
-    border: none;
-    border-radius: 10px;
-    font-size: 18px;
-    font-weight: bold;
-    width: 100%;
-    margin-top: 15px;
-    cursor: pointer;
-}
