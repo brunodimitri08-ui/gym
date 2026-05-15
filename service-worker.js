@@ -1,77 +1,51 @@
-const CACHE_NAME = "workout-cache-v3";
+// Cambia questo numero ogni volta che fai un update importante
+const CACHE_NAME = "workout-cache-v1";
 
-const FILES_TO_CACHE = [
-  "/",
-  "/index.html",
-  "/style.css",
-  "/app.js",
-  "/manifest.json",
-  "/icon-192.png",
-  "/icon-512.png"
+// File da mettere in cache
+const ASSETS = [
+  "/gym/",                // homepage su GitHub Pages
+  "/gym/index.html",
+  "/gym/style.css",
+  "/gym/app.js",
+  "/gym/manifest.json",
+  "/gym/icon-192.png",
+  "/gym/icon-512.png"
 ];
 
-// Install: cache iniziale
+// Installazione: cache dei file
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(FILES_TO_CACHE);
+      return cache.addAll(ASSETS);
     })
   );
-  self.skipWaiting();
+  self.skipWaiting(); // forza l'installazione immediata
 });
 
-// Activate: pulizia cache vecchie
+// Attivazione: elimina vecchie cache
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
       )
     )
   );
-  self.clients.claim();
+  self.clients.claim(); // aggiorna subito le pagine aperte
 });
 
-// Fetch: cache first, fallback rete
+// Fetch: network-first con fallback alla cache
 self.addEventListener("fetch", event => {
-  const request = event.request;
-
-  // Ignora chiamate non GET (es. POST)
-  if (request.method !== "GET") {
-    return;
-  }
-
   event.respondWith(
-    caches.match(request).then(cachedResponse => {
-      if (cachedResponse) {
-        // Prova ad aggiornare in background
-        fetch(request).then(response => {
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(request, response.clone());
-          });
-        }).catch(() => {});
-        return cachedResponse;
-      }
-
-      // Non in cache → vai in rete
-      return fetch(request)
-        .then(response => {
-          // Metti in cache la risposta nuova
-          return caches.open(CACHE_NAME).then(cache => {
-            cache.put(request, response.clone());
-            return response;
-          });
-        })
-        .catch(() => {
-          // Fallback minimale se offline e non in cache
-          if (request.mode === "navigate") {
-            return caches.match("/index.html");
-          }
-        });
-    })
+    fetch(event.request)
+      .then(response => {
+        // aggiorna la cache con la nuova versione
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request)) // offline fallback
   );
 });
