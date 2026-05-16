@@ -478,24 +478,28 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 50);
 });
 
+async function loadAllLatestKg() {
+    for (const d in workouts) {
+        for (const ex of workouts[d]) {
+            await loadKgInputs(ex.id);
+            await loadLastKg(ex.id);
+            await updateExerciseCheck(ex.id);
+        }
+    }
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
-    // Carica il giorno 1
     loadDay(1);
 
-    // Aspetta che il DOM sia completamente generato
     setTimeout(() => {
-        for (const d in workouts) {
-            workouts[d].forEach(ex => {
-                loadKgInputs(ex.id);
-                loadLastKg(ex.id);
-                updateExerciseCheck(ex.id);
-            });
-        }
-    }, 500); // <-- 500ms per iOS PWA è il valore stabile
+        loadAllLatestKg();
+    }, 300);
 });
+
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-        location.reload();
+        loadAllLatestKg();
     }
 });
