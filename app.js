@@ -493,3 +493,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, 500); // <-- 500ms per iOS PWA è il valore stabile
 });
+
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        location.reload();
+    }
+});
