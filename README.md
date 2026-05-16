@@ -13,4 +13,6 @@ Questa web app ti permette di gestire i tuoi allenamenti direttamente dal telefo
 6. Scorri verso il basso e seleziona **Aggiungi alla schermata Home**.
 7. Conferma il nome dell’app e premi **Aggiungi**.
 
-L’app comparirà sulla Home del tuo iPhone come una vera applicazione, con icona e apertura full‑screen.
+L’app comparirà sulla Home del tuo iPhone.
+
+🏋️‍♂️BUON ALLENAMENTO🏋️‍♂️
