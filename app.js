@@ -1,8 +1,27 @@
-/* ==========================================================
-   WORKOUT APP — APP.JS
-   Versione: 2.3 — Persistenza KG + Edit Mode + Timer
-   Ultima modifica: 16/05/2026
-   ========================================================== */
+/* ============================
+   INDEXEDDB — DATABASE
+============================ */
+let db;
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open("WorkoutDB", 1);
+
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains("kgHistory")) {
+                db.createObjectStore("kgHistory", { keyPath: "exId" });
+            }
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            resolve();
+        };
+
+        request.onerror = (event) => reject(event);
+    });
+}
 
 /* ============================
    GENERA ID UNICO
@@ -121,97 +140,110 @@ function toggleExercise(id) {
 }
 
 /* ============================
-   SALVATAGGIO KG
+   SALVATAGGIO KG (FORMATO UNICO)
 ============================ */
-function saveKg(exId, series) {
-    const key = "kgHistory";
-    const data = JSON.parse(localStorage.getItem(key)) || {};
-    const today = new Date().toISOString().split("T")[0];
+async function saveKg(exId, series) {
+    await openDB();
 
-    if (!data[exId]) data[exId] = {};
-    if (!data[exId][series]) data[exId][series] = [];
+    const tx = db.transaction("kgHistory", "readwrite");
+    const store = tx.objectStore("kgHistory");
 
     const input = document.getElementById(`kg-${exId}-${series}`);
     const kgValue = input.value;
-
     if (!kgValue) return;
 
-    data[exId][series].push({
-        kg: kgValue,
-        date: today
-    });
+    const today = new Date().toISOString().split("T")[0];
 
-    localStorage.setItem(key, JSON.stringify(data));
+    store.get(exId).onsuccess = (event) => {
+        let record = event.target.result || { exId, data: {} };
 
-    loadLastKg(exId);
-    updateExerciseCheck(exId);
+        if (!record.data[series]) record.data[series] = [];
+
+        record.data[series].push({
+            kg: kgValue,
+            date: today
+        });
+
+        store.put(record);
+
+        loadLastKg(exId);
+        updateExerciseCheck(exId);
+    };
 }
 
 /* ============================
    CARICA ULTIMO KG
 ============================ */
-function loadLastKg(exId) {
-    const key = "kgHistory";
-    const data = JSON.parse(localStorage.getItem(key)) || {};
+async function loadLastKg(exId) {
+    await openDB();
 
-    if (!data[exId]) return;
+    const tx = db.transaction("kgHistory", "readonly");
+    const store = tx.objectStore("kgHistory");
 
-    const exercise = findExerciseById(exId);
-    if (!exercise) return;
+    store.get(exId).onsuccess = (event) => {
+        const record = event.target.result;
+        if (!record) return;
 
-    for (let s = 1; s <= exercise.series; s++) {
-        const span = document.getElementById(`lastkg-${exId}-${s}`);
-        if (!span) continue;
+        const exercise = findExerciseById(exId);
+        if (!exercise) return;
 
-        const seriesData = data[exId][s];
-        if (!seriesData || seriesData.length === 0) {
-            span.textContent = "";
-            continue;
+        for (let s = 1; s <= exercise.series; s++) {
+            const span = document.getElementById(`lastkg-${exId}-${s}`);
+            if (!span) continue;
+
+            const seriesData = record.data[s];
+            if (!seriesData || seriesData.length === 0) {
+                span.textContent = "";
+                continue;
+            }
+
+            const last = seriesData[seriesData.length - 1];
+            span.textContent = `Ultimo: ${last.kg}kg (${last.date})`;
         }
 
-        const last = seriesData[seriesData.length - 1];
-        span.textContent = `Ultimo: ${last.kg}kg (${last.date})`;
-    }
-
-    updateExerciseCheck(exId);
+        updateExerciseCheck(exId);
+    };
 }
 
 /* ============================
    SPUNTA ✔️
 ============================ */
-function updateExerciseCheck(exId) {
-    const key = "kgHistory";
-    const data = JSON.parse(localStorage.getItem(key)) || {};
-    const today = new Date().toISOString().split("T")[0];
+async function updateExerciseCheck(exId) {
+    await openDB();
 
-    const exercise = findExerciseById(exId);
-    if (!exercise) return;
+    const tx = db.transaction("kgHistory", "readonly");
+    const store = tx.objectStore("kgHistory");
 
-    const totalSeries = exercise.series;
-    let completed = 0;
+    store.get(exId).onsuccess = (event) => {
+        const record = event.target.result;
+        const today = new Date().toISOString().split("T")[0];
 
-    if (!data[exId]) return;
+        const exercise = findExerciseById(exId);
+        if (!exercise) return;
 
-    for (let s = 1; s <= totalSeries; s++) {
-        const seriesData = data[exId][s];
-        if (!seriesData) continue;
+        let completed = 0;
 
-        const last = seriesData[seriesData.length - 1];
-        if (last && last.date === today) {
-            completed++;
+        if (record && record.data) {
+            for (let s = 1; s <= exercise.series; s++) {
+                const seriesData = record.data[s];
+                if (!seriesData) continue;
+
+                const last = seriesData[seriesData.length - 1];
+                if (last && last.date === today) completed++;
+            }
         }
-    }
 
-    const checkSpan = document.getElementById(`check-${exId}`);
-    if (!checkSpan) return;
+        const checkSpan = document.getElementById(`check-${exId}`);
+        if (!checkSpan) return;
 
-    if (completed === totalSeries) {
-        checkSpan.textContent = "✔️";
-        checkSpan.classList.add("done");
-    } else {
-        checkSpan.textContent = "";
-        checkSpan.classList.remove("done");
-    }
+        if (completed === exercise.series) {
+            checkSpan.textContent = "✔️";
+            checkSpan.classList.add("done");
+        } else {
+            checkSpan.textContent = "";
+            checkSpan.classList.remove("done");
+        }
+    };
 }
 
 /* ============================
@@ -399,25 +431,33 @@ function saveAllExercises(day) {
 /* ============================
    RICARICA KG NEGLI INPUT
 ============================ */
-function loadKgInputs(exId) {
-    const key = "kgHistory";
-    const data = JSON.parse(localStorage.getItem(key)) || {};
-    const exercise = findExerciseById(exId);
-    if (!exercise) return;
+async function loadKgInputs(exId) {
+    await openDB();
 
-    for (let s = 1; s <= exercise.series; s++) {
-        const input = document.getElementById(`kg-${exId}-${s}`);
-        if (!input) continue;
+    const tx = db.transaction("kgHistory", "readonly");
+    const store = tx.objectStore("kgHistory");
 
-        const seriesData = data?.[exId]?.[s];
-        if (!seriesData || seriesData.length === 0) {
-            input.value = "";
-            continue;
+    store.get(exId).onsuccess = (event) => {
+        const record = event.target.result;
+        if (!record) return;
+
+        const exercise = findExerciseById(exId);
+        if (!exercise) return;
+
+        for (let s = 1; s <= exercise.series; s++) {
+            const input = document.getElementById(`kg-${exId}-${s}`);
+            if (!input) continue;
+
+            const seriesData = record.data[s];
+            if (!seriesData || seriesData.length === 0) {
+                input.value = "";
+                continue;
+            }
+
+            const last = seriesData[seriesData.length - 1];
+            input.value = last.kg;
         }
-
-        const last = seriesData[seriesData.length - 1];
-        input.value = last.kg;
-    }
+    };
 }
 
 /* ============================
@@ -439,3 +479,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, 50);
 });
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await openDB();
+
+    loadDay(1);
+
+    setTimeout(() => {
+        for (const d in workouts) {
+            workouts[d].forEach(ex => {
+                loadKgInputs(ex.id);
+                loadLastKg(ex.id);
+                updateExerciseCheck(ex.id);
+            });
+        }
+    }, 100);
+});
+

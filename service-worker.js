@@ -1,49 +1,43 @@
-let CACHE_NAME = "workout-cache";
+// ======================================================
+// SERVICE WORKER — VERSIONE STABILE PER iOS + IndexedDB
+// ======================================================
 
-// Installazione: cache degli asset
+const CACHE_NAME = "workout-static-v1";
+
+// File statici da mettere in cache
+const ASSETS = [
+  "/gym/",
+  "/gym/index.html",
+  "/gym/style.css",
+  "/gym/app.js",
+  "/gym/manifest.json",
+  "/gym/icon-192.png",
+  "/gym/icon-512.png"
+];
+
+// Installazione SW
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll([
-        "/gym/",
-        "/gym/index.html",
-        "/gym/style.css",
-        "/gym/app.js",
-        "/gym/manifest.json",
-        "/gym/icon-192.png",
-        "/gym/icon-512.png",
-        "/gym/version.json"
-      ]);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
 
-// Attivazione
+// Attivazione SW
 self.addEventListener("activate", event => {
   event.waitUntil(self.clients.claim());
 });
 
-// Fetch con auto-update
+// Strategia: NETWORK FIRST → FALLBACK CACHE
 self.addEventListener("fetch", event => {
-  if (event.request.url.includes("version.json")) {
-    return event.respondWith(fetch(event.request, { cache: "no-store" }));
-  }
-
   event.respondWith(
     fetch(event.request)
       .then(response => {
+        // Aggiorna la cache con la nuova versione
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
       })
       .catch(() => caches.match(event.request))
   );
-});
-
-// Messaggi dal client
-self.addEventListener("message", event => {
-  if (event.data.action === "skipWaiting") {
-    self.skipWaiting();
-  }
 });
