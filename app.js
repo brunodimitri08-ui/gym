@@ -151,23 +151,35 @@ async function saveKg(ex_id, series) {
     const input = document.getElementById(`kg-${ex_id}-${series}`);
     const kg = parseFloat(input.value);
 
-    if (isNaN(kg) || kg <= 0) return;
+    if (isNaN(kg) || kg <= 0) {
+        console.log("Kg non valido");
+        return;
+    }
 
-    const today = new Date().toISOString().split("T")[0]; // <-- DATA CORRETTA
+    const today = new Date().toISOString().split("T")[0];
 
-    const { error } = await supabase
+    console.log("Salvo:", { ex_id, series, kg, today });
+
+    const { data, error } = await supabase
         .from("kg_history")
         .insert({
             ex_id: ex_id,
             series: series,
             kg: kg,
-            date: today   // <-- SALVATA QUI
+            date: today
         });
 
     if (error) {
-        console.error("Errore salvataggio kg:", error);
+        console.error("Errore Supabase:", error);
         return;
     }
+
+    console.log("Salvato con successo:", data);
+
+    loadLastKg(ex_id);
+    updateExerciseCheck(ex_id, findExerciseById(ex_id).series);
+}
+
 
     // aggiorna UI
     loadLastKg(ex_id);
