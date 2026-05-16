@@ -39,30 +39,30 @@ function newId() {
 ============================ */
 const workouts = {
     1: [
-        { id: newId(), name: "Panca piana bilanciere", series: 4, reps: 8, rest: 120 },
-        { id: newId(), name: "Panca inclinata manubri", series: 3, reps: 10, rest: 90 },
-        { id: newId(), name: "Chest press / Croci / Butterfly", series: 3, reps: 12, rest: 75 },
-        { id: newId(), name: "Military press manubri", series: 3, reps: 10, rest: 90 },
-        { id: newId(), name: "Alzate laterali", series: 3, reps: 15, rest: 60 },
-        { id: newId(), name: "Tricipiti ai cavi", series: 3, reps: 15, rest: 60 },
-        { id: newId(), name: "French press", series: 2, reps: 12, rest: 75 }
+        { id: "1", name: "Panca piana bilanciere", series: 4, reps: 8, rest: 120 },
+        { id: "2", name: "Panca inclinata manubri", series: 3, reps: 10, rest: 90 },
+        { id: "3", name: "Chest press / Croci / Butterfly", series: 3, reps: 12, rest: 75 },
+        { id: "4", name: "Military press manubri", series: 3, reps: 10, rest: 90 },
+        { id: "5", name: "Alzate laterali", series: 3, reps: 15, rest: 60 },
+        { id: "6", name: "Tricipiti ai cavi", series: 3, reps: 15, rest: 60 },
+        { id: "7", name: "French press", series: 2, reps: 12, rest: 75 }
     ],
     2: [
-        { id: newId(), name: "Lat machine", series: 4, reps: 8, rest: 120 },
-        { id: newId(), name: "Pulley basso", series: 4, reps: 10, rest: 120 },
-        { id: newId(), name: "Pulldown presa stretta", series: 3, reps: 12, rest: 90 },
-        { id: newId(), name: "Rematore macchina", series: 3, reps: 10, rest: 120 },
-        { id: newId(), name: "Curl bilanciere", series: 3, reps: 12, rest: 75 },
-        { id: newId(), name: "Curl manubri alternati", series: 2, reps: 14, rest: 60 },
-        { id: newId(), name: "Hammer curl", series: 3, reps: 12, rest: 75 }
+        { id: "8", name: "Lat machine", series: 4, reps: 8, rest: 120 },
+        { id: "9", name: "Pulley basso", series: 4, reps: 10, rest: 120 },
+        { id: "10", name: "Pulldown presa stretta", series: 3, reps: 12, rest: 90 },
+        { id: "11", name: "Rematore macchina", series: 3, reps: 10, rest: 120 },
+        { id: "12", name: "Curl bilanciere", series: 3, reps: 12, rest: 75 },
+        { id: "13", name: "Curl manubri alternati", series: 2, reps: 14, rest: 60 },
+        { id: "14", name: "Hammer curl", series: 3, reps: 12, rest: 75 }
     ],
     3: [
-        { id: newId(), name: "Squat", series: 4, reps: 8, rest: 120 },
-        { id: newId(), name: "Leg press", series: 4, reps: 12, rest: 120 },
-        { id: newId(), name: "Leg curl", series: 3, reps: 15, rest: 75 },
-        { id: newId(), name: "Chest press leggera", series: 2, reps: 15, rest: 60 },
-        { id: newId(), name: "Pulley basso neutra", series: 2, reps: 15, rest: 60 },
-        { id: newId(), name: "Addome", series: 3, reps: 15, rest: 60 }
+        { id: "15", name: "Squat", series: 4, reps: 8, rest: 120 },
+        { id: "16", name: "Leg press", series: 4, reps: 12, rest: 120 },
+        { id: "17", name: "Leg curl", series: 3, reps: 15, rest: 75 },
+        { id: "18", name: "Chest press leggera", series: 2, reps: 15, rest: 60 },
+        { id: "19", name: "Pulley basso neutra", series: 2, reps: 15, rest: 60 },
+        { id: "20", name: "Addome", series: 3, reps: 15, rest: 60 }
     ]
 };
 
