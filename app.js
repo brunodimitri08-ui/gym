@@ -209,39 +209,35 @@ async function loadLastKg(exId) {
 /* ============================
    SPUNTA ✔️
 ============================ */
-async function updateExerciseCheck(exId) {
+async function updateExerciseCheck(ex_id, totalSeries) {
     const today = new Date().toISOString().split("T")[0];
-    const exercise = findExerciseById(exId);
-    if (!exercise) return;
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/kg_history?ex_id=eq.${exId}&select=*`, {
-        headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`
-        }
-    });
+    // Prende tutte le serie salvate oggi per questo esercizio
+    const { data, error } = await supabase
+        .from("kg_history")
+        .select("series, date")
+        .eq("ex_id", ex_id)
+        .eq("date", today);
 
-    const data = await res.json();
-
-    let completed = 0;
-
-    for (let s = 1; s <= exercise.series; s++) {
-        const entries = data.filter(d => d.series === s);
-        if (entries.length === 0) continue;
-
-        const last = entries[entries.length - 1];
-        if (last.date === today) completed++;
+    if (error) {
+        console.error("Errore Supabase:", error);
+        return;
     }
 
-    const checkSpan = document.getElementById(`check-${exId}`);
-    if (!checkSpan) return;
+    // Se non ci sono dati → niente spunta
+    if (!data || data.length === 0) {
+        document.getElementById(`check-${ex_id}`).textContent = "";
+        return;
+    }
 
-    if (completed === exercise.series) {
-        checkSpan.textContent = "✔️";
-        checkSpan.classList.add("done");
+    // Conta quante serie sono state salvate oggi
+    const completedSeries = new Set(data.map(row => row.series));
+
+    // Se tutte le serie sono presenti → spunta ✔️
+    if (completedSeries.size === totalSeries) {
+        document.getElementById(`check-${ex_id}`).textContent = "✔️";
     } else {
-        checkSpan.textContent = "";
-        checkSpan.classList.remove("done");
+        document.getElementById(`check-${ex_id}`).textContent = "";
     }
 }
 
@@ -500,6 +496,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-        loadAllLatestKg();
+        for (const d in workouts) {
+            workouts[d].forEach(ex => {
+                updateExerciseCheck(ex.id, ex.series);
+            });
+        }
     }
 });
