@@ -479,8 +479,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Carica il giorno 1
     loadDay(1);
 
+    // Aspetta che il DOM sia completamente generato
     setTimeout(() => {
         for (const d in workouts) {
             workouts[d].forEach(ex => {
@@ -489,5 +491,5 @@ document.addEventListener("DOMContentLoaded", () => {
                 updateExerciseCheck(ex.id);
             });
         }
-    }, 200);
+    }, 500); // <-- 500ms per iOS PWA è il valore stabile
 });
