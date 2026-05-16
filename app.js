@@ -1,3 +1,7 @@
+const SUPABASE_URL = "https://gsirpvtsxxrbhefsoyfz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_L6Ax61Zq1BEQqapjq__8sQ_GAYUTo8o";
+
+
 /* ============================
    INDEXEDDB — DATABASE
 ============================ */
@@ -143,107 +147,102 @@ function toggleExercise(id) {
    SALVATAGGIO KG (FORMATO UNICO)
 ============================ */
 async function saveKg(exId, series) {
-    await openDB();
-
-    const tx = db.transaction("kgHistory", "readwrite");
-    const store = tx.objectStore("kgHistory");
-
     const input = document.getElementById(`kg-${exId}-${series}`);
     const kgValue = input.value;
     if (!kgValue) return;
 
     const today = new Date().toISOString().split("T")[0];
 
-    store.get(exId).onsuccess = (event) => {
-        let record = event.target.result || { exId, data: {} };
-
-        if (!record.data[series]) record.data[series] = [];
-
-        record.data[series].push({
-            kg: kgValue,
+    await fetch(`${SUPABASE_URL}/rest/v1/kg_history`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({
+            ex_id: exId,
+            series: series,
+            kg: parseInt(kgValue),
             date: today
-        });
+        })
+    });
 
-        store.put(record);
-
-        loadLastKg(exId);
-        updateExerciseCheck(exId);
-    };
+    loadLastKg(exId);
+    updateExerciseCheck(exId);
 }
 
 /* ============================
    CARICA ULTIMO KG
 ============================ */
 async function loadLastKg(exId) {
-    await openDB();
+    const exercise = findExerciseById(exId);
+    if (!exercise) return;
 
-    const tx = db.transaction("kgHistory", "readonly");
-    const store = tx.objectStore("kgHistory");
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kg_history?ex_id=eq.${exId}&select=*`, {
+        headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+        }
+    });
 
-    store.get(exId).onsuccess = (event) => {
-        const record = event.target.result;
-        if (!record) return;
+    const data = await res.json();
 
-        const exercise = findExerciseById(exId);
-        if (!exercise) return;
+    for (let s = 1; s <= exercise.series; s++) {
+        const span = document.getElementById(`lastkg-${exId}-${s}`);
+        if (!span) continue;
 
-        for (let s = 1; s <= exercise.series; s++) {
-            const span = document.getElementById(`lastkg-${exId}-${s}`);
-            if (!span) continue;
-
-            const seriesData = record.data[s];
-            if (!seriesData || seriesData.length === 0) {
-                span.textContent = "";
-                continue;
-            }
-
-            const last = seriesData[seriesData.length - 1];
-            span.textContent = `Ultimo: ${last.kg}kg (${last.date})`;
+        const entries = data.filter(d => d.series === s);
+        if (entries.length === 0) {
+            span.textContent = "";
+            continue;
         }
 
-        updateExerciseCheck(exId);
-    };
+        const last = entries[entries.length - 1];
+        span.textContent = `Ultimo: ${last.kg}kg (${last.date})`;
+    }
+
+    updateExerciseCheck(exId);
 }
 
 /* ============================
    SPUNTA ✔️
 ============================ */
 async function updateExerciseCheck(exId) {
-    await openDB();
+    const today = new Date().toISOString().split("T")[0];
+    const exercise = findExerciseById(exId);
+    if (!exercise) return;
 
-    const tx = db.transaction("kgHistory", "readonly");
-    const store = tx.objectStore("kgHistory");
-
-    store.get(exId).onsuccess = (event) => {
-        const record = event.target.result;
-        const today = new Date().toISOString().split("T")[0];
-
-        const exercise = findExerciseById(exId);
-        if (!exercise) return;
-
-        let completed = 0;
-
-        if (record && record.data) {
-            for (let s = 1; s <= exercise.series; s++) {
-                const seriesData = record.data[s];
-                if (!seriesData) continue;
-
-                const last = seriesData[seriesData.length - 1];
-                if (last && last.date === today) completed++;
-            }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kg_history?ex_id=eq.${exId}&select=*`, {
+        headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
         }
+    });
 
-        const checkSpan = document.getElementById(`check-${exId}`);
-        if (!checkSpan) return;
+    const data = await res.json();
 
-        if (completed === exercise.series) {
-            checkSpan.textContent = "✔️";
-            checkSpan.classList.add("done");
-        } else {
-            checkSpan.textContent = "";
-            checkSpan.classList.remove("done");
-        }
-    };
+    let completed = 0;
+
+    for (let s = 1; s <= exercise.series; s++) {
+        const entries = data.filter(d => d.series === s);
+        if (entries.length === 0) continue;
+
+        const last = entries[entries.length - 1];
+        if (last.date === today) completed++;
+    }
+
+    const checkSpan = document.getElementById(`check-${exId}`);
+    if (!checkSpan) return;
+
+    if (completed === exercise.series) {
+        checkSpan.textContent = "✔️";
+        checkSpan.classList.add("done");
+    } else {
+        checkSpan.textContent = "";
+        checkSpan.classList.remove("done");
+    }
 }
 
 /* ============================
@@ -432,32 +431,31 @@ function saveAllExercises(day) {
    RICARICA KG NEGLI INPUT
 ============================ */
 async function loadKgInputs(exId) {
-    await openDB();
+    const exercise = findExerciseById(exId);
+    if (!exercise) return;
 
-    const tx = db.transaction("kgHistory", "readonly");
-    const store = tx.objectStore("kgHistory");
-
-    store.get(exId).onsuccess = (event) => {
-        const record = event.target.result;
-        if (!record) return;
-
-        const exercise = findExerciseById(exId);
-        if (!exercise) return;
-
-        for (let s = 1; s <= exercise.series; s++) {
-            const input = document.getElementById(`kg-${exId}-${s}`);
-            if (!input) continue;
-
-            const seriesData = record.data[s];
-            if (!seriesData || seriesData.length === 0) {
-                input.value = "";
-                continue;
-            }
-
-            const last = seriesData[seriesData.length - 1];
-            input.value = last.kg;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kg_history?ex_id=eq.${exId}&select=*`, {
+        headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
         }
-    };
+    });
+
+    const data = await res.json();
+
+    for (let s = 1; s <= exercise.series; s++) {
+        const input = document.getElementById(`kg-${exId}-${s}`);
+        if (!input) continue;
+
+        const entries = data.filter(d => d.series === s);
+        if (entries.length === 0) {
+            input.value = "";
+            continue;
+        }
+
+        const last = entries[entries.length - 1];
+        input.value = last.kg;
+    }
 }
 
 /* ============================
@@ -480,9 +478,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 50);
 });
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await openDB();
-
+document.addEventListener("DOMContentLoaded", () => {
     loadDay(1);
 
     setTimeout(() => {
@@ -493,6 +489,5 @@ document.addEventListener("DOMContentLoaded", async () => {
                 updateExerciseCheck(ex.id);
             });
         }
-    }, 100);
+    }, 200);
 });
-
