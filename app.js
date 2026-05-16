@@ -147,31 +147,31 @@ function toggleExercise(id) {
 /* ============================
    SALVATAGGIO KG (FORMATO UNICO)
 ============================ */
-async function saveKg(exId, series) {
-    const input = document.getElementById(`kg-${exId}-${series}`);
-    const kgValue = input.value;
-    if (!kgValue) return;
+async function saveKg(ex_id, series) {
+    const input = document.getElementById(`kg-${ex_id}-${series}`);
+    const kg = parseFloat(input.value);
 
-    const today = new Date().toISOString().split("T")[0];
+    if (isNaN(kg) || kg <= 0) return;
 
-    await fetch(`${SUPABASE_URL}/rest/v1/kg_history`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`,
-            "Prefer": "return=minimal"
-        },
-        body: JSON.stringify({
-            ex_id: exId,
+    const today = new Date().toISOString().split("T")[0]; // <-- DATA CORRETTA
+
+    const { error } = await supabase
+        .from("kg_history")
+        .insert({
+            ex_id: ex_id,
             series: series,
-            kg: parseInt(kgValue),
-            date: today
-        })
-    });
+            kg: kg,
+            date: today   // <-- SALVATA QUI
+        });
 
-    loadLastKg(exId);
-    updateExerciseCheck(exId);
+    if (error) {
+        console.error("Errore salvataggio kg:", error);
+        return;
+    }
+
+    // aggiorna UI
+    loadLastKg(ex_id);
+    updateExerciseCheck(ex_id, findExerciseById(ex_id).series);
 }
 
 /* ============================
