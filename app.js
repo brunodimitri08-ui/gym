@@ -122,7 +122,8 @@ function loadDay(day) {
         setTimeout(() => {
             loadKgInputs(ex.id);
             loadLastKg(ex.id);
-            updateExerciseCheck(ex.id);
+            updateExerciseCheck(ex.id, ex.series);
+
         }, 0);
 
         container.appendChild(wrapper);
@@ -212,7 +213,6 @@ async function loadLastKg(exId) {
 async function updateExerciseCheck(ex_id, totalSeries) {
     const today = new Date().toISOString().split("T")[0];
 
-    // Prende tutte le serie salvate oggi per questo esercizio
     const { data, error } = await supabase
         .from("kg_history")
         .select("series, date")
@@ -220,24 +220,23 @@ async function updateExerciseCheck(ex_id, totalSeries) {
         .eq("date", today);
 
     if (error) {
-        console.error("Errore Supabase:", error);
+        console.error("Errore updateExerciseCheck:", error);
         return;
     }
 
-    // Se non ci sono dati → niente spunta
+    const checkSpan = document.getElementById(`check-${ex_id}`);
+
     if (!data || data.length === 0) {
-        document.getElementById(`check-${ex_id}`).textContent = "";
+        if (checkSpan) checkSpan.textContent = "";
         return;
     }
 
-    // Conta quante serie sono state salvate oggi
     const completedSeries = new Set(data.map(row => row.series));
 
-    // Se tutte le serie sono presenti → spunta ✔️
     if (completedSeries.size === totalSeries) {
-        document.getElementById(`check-${ex_id}`).textContent = "✔️";
+        checkSpan.textContent = "✔️";
     } else {
-        document.getElementById(`check-${ex_id}`).textContent = "";
+        checkSpan.textContent = "";
     }
 }
 
@@ -492,7 +491,6 @@ document.addEventListener("DOMContentLoaded", () => {
         loadAllLatestKg();
     }, 300);
 });
-
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
