@@ -1,7 +1,7 @@
 /* ==========================================================
    WORKOUT APP — APP.JS
-   Versione: 2.2 — ID Unici + Edit Mode Completo
-   Ultima modifica: 15/05/2026
+   Versione: 2.3 — Persistenza KG + Edit Mode + Timer
+   Ultima modifica: 16/05/2026
    ========================================================== */
 
 /* ============================
@@ -91,13 +91,13 @@ function loadDay(day) {
                 </div>
 
                 <div id="lastkg-${ex.id}-${i}" class="lastkg"></div>
-
             `;
 
             body.appendChild(seriesDiv);
         }
 
         setTimeout(() => {
+            loadKgInputs(ex.id);
             loadLastKg(ex.id);
             updateExerciseCheck(ex.id);
         }, 0);
@@ -227,7 +227,7 @@ function findExerciseById(id) {
 }
 
 /* ============================
-   EDIT MODE — VERSIONE COMPLETA
+   EDIT MODE
 ============================ */
 function enterEditMode(day) {
     const container = document.getElementById("exercise-list");
@@ -275,7 +275,6 @@ function enterEditMode(day) {
     saveAllBtn.onclick = () => saveAllExercises(day);
     container.appendChild(saveAllBtn);
 
-
     const cancelBtn = document.createElement("button");
     cancelBtn.textContent = "Annulla";
     cancelBtn.className = "cancel-btn";
@@ -284,7 +283,7 @@ function enterEditMode(day) {
 }
 
 /* ============================
-   SALVA MODIFICHE
+   SALVA MODIFICHE SINGOLO EX
 ============================ */
 function saveEditMode(exId, day) {
     const ex = findExerciseById(exId);
@@ -321,24 +320,21 @@ function deleteExerciseById(exId, day) {
     workouts[day] = workouts[day].filter(ex => ex.id !== exId);
     enterEditMode(day);
 }
-/* ============================
-   TIMER CON MILLISECONDI (2 cifre)
-============================ */
 
+/* ============================
+   TIMER CON MILLISECONDI
+============================ */
 function startTimer(restSeconds, btn) {
     const seriesDiv = btn.closest(".series");
     const timerSpan = seriesDiv.querySelector(".timer");
 
-    // Se esiste già un timer attivo, non avviarne un altro
     if (seriesDiv._timerInterval) return;
 
-    // Tempo totale in millisecondi
     let totalMs = seriesDiv._currentMs ?? restSeconds * 1000;
-
     seriesDiv._currentMs = totalMs;
 
     seriesDiv._timerInterval = setInterval(() => {
-        totalMs -= 10; // aggiorna ogni 10 ms
+        totalMs -= 10;
         if (totalMs <= 0) {
             totalMs = 0;
             clearInterval(seriesDiv._timerInterval);
@@ -348,7 +344,7 @@ function startTimer(restSeconds, btn) {
         seriesDiv._currentMs = totalMs;
 
         const sec = Math.floor(totalMs / 1000);
-        const cs = Math.floor((totalMs % 1000) / 10); // centisecondi (00–99)
+        const cs = Math.floor((totalMs % 1000) / 10);
 
         timerSpan.textContent = `⏱️ ${sec}.${cs.toString().padStart(2, "0")}`;
     }, 10);
@@ -377,13 +373,13 @@ function resetTimer(restSeconds, btn) {
     timerSpan.textContent = `⏱️ ${restSeconds}.00`;
 }
 
+/* ============================
+   SALVA TUTTO (EDIT MODE)
+============================ */
 function saveAllExercises(day) {
-    console.log("Salvataggio completo per giorno:", day);
-
-    // 1️⃣ Salva le modifiche agli esercizi (nome, serie, reps, rest)
     const exercises = workouts[day];
 
-    exercises.forEach((ex, exIndex) => {
+    exercises.forEach((ex) => {
         const nameInput = document.getElementById(`edit-name-${ex.id}`);
         const seriesInput = document.getElementById(`edit-series-${ex.id}`);
         const repsInput = document.getElementById(`edit-reps-${ex.id}`);
@@ -395,48 +391,51 @@ function saveAllExercises(day) {
         if (restInput) ex.rest = parseInt(restInput.value);
     });
 
-    // Salva gli esercizi aggiornati
     localStorage.setItem("workouts", JSON.stringify(workouts));
 
-    // 2️⃣ Salva i kg come prima
-    const key = "kgHistory";
-    const data = JSON.parse(localStorage.getItem(key)) || {};
-
-    if (!data[day]) data[day] = {};
-
-    exercises.forEach((ex, exIndex) => {
-        if (!data[day][exIndex]) data[day][exIndex] = {};
-
-        for (let s = 1; s <= ex.series; s++) {
-            const inputId = `kg-${day}-${exIndex}-${s}`;
-            const input = document.getElementById(inputId);
-
-            if (!input) continue;
-
-            const kg = input.value.trim();
-            if (kg === "") continue;
-
-            if (!data[day][exIndex][s]) data[day][exIndex][s] = [];
-
-            data[day][exIndex][s].push({
-                kg: kg,
-                date: new Date().toLocaleString()
-            });
-        }
-
-        if (typeof loadExerciseHistory === "function") {
-            loadExerciseHistory(day, exIndex);
-        }
-
-        if (typeof updateExerciseCompletion === "function") {
-            updateExerciseCompletion(day, exIndex);
-        }
-    });
-
-    localStorage.setItem(key, JSON.stringify(data));
-
-    console.log("Salvataggio completato. Ricarico il giorno:", day);
-
-    // 3️⃣ Esce dalla modalità modifica
     loadDay(day);
 }
+
+/* ============================
+   RICARICA KG NEGLI INPUT
+============================ */
+function loadKgInputs(exId) {
+    const key = "kgHistory";
+    const data = JSON.parse(localStorage.getItem(key)) || {};
+    const exercise = findExerciseById(exId);
+    if (!exercise) return;
+
+    for (let s = 1; s <= exercise.series; s++) {
+        const input = document.getElementById(`kg-${exId}-${s}`);
+        if (!input) continue;
+
+        const seriesData = data?.[exId]?.[s];
+        if (!seriesData || seriesData.length === 0) {
+            input.value = "";
+            continue;
+        }
+
+        const last = seriesData[seriesData.length - 1];
+        input.value = last.kg;
+    }
+}
+
+/* ============================
+   RICARICA TUTTO ALL’AVVIO
+============================ */
+document.addEventListener("DOMContentLoaded", () => {
+    const today = new Date().getDay();
+    const day = today === 0 ? 1 : today;
+
+    loadDay(day);
+
+    setTimeout(() => {
+        for (const d in workouts) {
+            workouts[d].forEach(ex => {
+                loadKgInputs(ex.id);
+                loadLastKg(ex.id);
+                updateExerciseCheck(ex.id);
+            });
+        }
+    }, 50);
+});
