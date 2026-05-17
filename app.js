@@ -1,6 +1,8 @@
+/* ============================
+   SUPABASE CONFIG (REST API)
+============================ */
 const SUPABASE_URL = "https://gsirpvtsxxrbhefsoyfz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_L6Ax61Zq1BEQqapjq__8sQ_GAYUTo8o";
-
 
 /* ============================
    INDEXEDDB — DATABASE
@@ -35,36 +37,59 @@ function newId() {
 }
 
 /* ============================
-   WORKOUTS CON ID AUTOMATICI
+   WORKOUTS
 ============================ */
-const workouts = {
-    1: [
-        { id: "1", name: "Panca piana bilanciere", series: 4, reps: 8, rest: 120 },
-        { id: "2", name: "Panca inclinata manubri", series: 3, reps: 10, rest: 90 },
-        { id: "3", name: "Chest press / Croci / Butterfly", series: 3, reps: 12, rest: 75 },
-        { id: "4", name: "Military press manubri", series: 3, reps: 10, rest: 90 },
-        { id: "5", name: "Alzate laterali", series: 3, reps: 15, rest: 60 },
-        { id: "6", name: "Tricipiti ai cavi", series: 3, reps: 15, rest: 60 },
-        { id: "7", name: "French press", series: 2, reps: 12, rest: 75 }
-    ],
-    2: [
-        { id: "8", name: "Lat machine", series: 4, reps: 8, rest: 120 },
-        { id: "9", name: "Pulley basso", series: 4, reps: 10, rest: 120 },
-        { id: "10", name: "Pulldown presa stretta", series: 3, reps: 12, rest: 90 },
-        { id: "11", name: "Rematore macchina", series: 3, reps: 10, rest: 120 },
-        { id: "12", name: "Curl bilanciere", series: 3, reps: 12, rest: 75 },
-        { id: "13", name: "Curl manubri alternati", series: 2, reps: 14, rest: 60 },
-        { id: "14", name: "Hammer curl", series: 3, reps: 12, rest: 75 }
-    ],
-    3: [
-        { id: "15", name: "Squat", series: 4, reps: 8, rest: 120 },
-        { id: "16", name: "Leg press", series: 4, reps: 12, rest: 120 },
-        { id: "17", name: "Leg curl", series: 3, reps: 15, rest: 75 },
-        { id: "18", name: "Chest press leggera", series: 2, reps: 15, rest: 60 },
-        { id: "19", name: "Pulley basso neutra", series: 2, reps: 15, rest: 60 },
-        { id: "20", name: "Addome", series: 3, reps: 15, rest: 60 }
-    ]
-};
+let workouts = { 1: [], 2: [], 3: [] };
+
+
+function loadWorkoutsFromStorage() {
+    const stored = localStorage.getItem("workouts");
+    if (!stored) return;
+
+    try {
+        const parsed = JSON.parse(stored);
+        // Copia dentro l'oggetto esistente senza riassegnare
+        for (const day in parsed) {
+            workouts[day] = parsed[day];
+        }
+    } catch (e) {
+        console.error("Errore nel parsing dei workouts da localStorage", e);
+    }
+}
+
+async function loadExercisesFromDB() {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/exercises?select=*`, {
+        method: "GET",
+        headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json"
+        }
+    });
+
+    const data = await res.json();
+
+    console.log("DATI DAL DB:", data); // 👈 DEBUG
+
+    // Reset struttura
+    workouts = { 1: [], 2: [], 3: [] };
+
+    data.forEach(ex => {
+        workouts[ex.day].push({
+            id: ex.id,
+            name: ex.name,
+            series: ex.series,
+            reps: ex.reps,
+            rest: ex.rest
+        });
+    });
+
+    // Ordina per ID
+    for (const day in workouts) {
+        workouts[day].sort((a, b) => a.id - b.id);
+    }
+}
+
 
 /* ============================
    CARICA GIORNO
@@ -122,8 +147,7 @@ function loadDay(day) {
         setTimeout(() => {
             loadKgInputs(ex.id);
             loadLastKg(ex.id);
-            updateExerciseCheck(ex.id, ex.series);
-
+            updateExerciseCheck(ex.id);
         }, 0);
 
         container.appendChild(wrapper);
@@ -145,46 +169,60 @@ function toggleExercise(id) {
 }
 
 /* ============================
-   SALVATAGGIO KG (FORMATO UNICO)
+   SALVATAGGIO KG (REST API)
 ============================ */
-async function saveKg(ex_id, series) {
-    const input = document.getElementById(`kg-${ex_id}-${series}`);
-    const kg = parseFloat(input.value);
+async function saveKg(exId, series) {
+    const input = document.getElementById(`kg-${exId}-${series}`);
+    const kgValue = input.value;
+    if (!kgValue) return;
 
-    if (isNaN(kg) || kg <= 0) {
-        console.log("Kg non valido");
-        return;
-    }
+    const today = getTodayLocalDate(); // 👈 FIX: data locale
 
-    const today = new Date().toISOString().split("T")[0];
-
-    console.log("Salvo:", { ex_id, series, kg, today });
-
-    const { data, error } = await supabase
-        .from("kg_history")
-        .insert({
-            ex_id: ex_id,
+    // 1. Salva su Supabase
+    await fetch(`${SUPABASE_URL}/rest/v1/kg_history`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({
+            ex_id: exId,
             series: series,
-            kg: kg,
+            kg: parseInt(kgValue),
             date: today
-        });
+        })
+    });
 
-    if (error) {
-        console.error("Errore Supabase:", error);
-        return;
+    // 2. Aggiorna SUBITO la UI
+    const span = document.getElementById(`lastkg-${exId}-${series}`);
+    if (span) {
+        span.textContent = `Ultimo: ${kgValue}kg (${today})`;
     }
 
-    console.log("Salvato con successo:", data);
+    // 3. Aggiorna IndexedDB
+    await openDB();
+    const tx = db.transaction("kgHistory", "readwrite");
+    const store = tx.objectStore("kgHistory");
 
-    loadLastKg(ex_id);
-    updateExerciseCheck(ex_id, findExerciseById(ex_id).series);
+    store.get(exId).onsuccess = (event) => {
+        const record = event.target.result || { exId, data: {} };
+
+        if (!record.data[series]) record.data[series] = [];
+        record.data[series].push({ kg: parseInt(kgValue), date: today });
+
+        // Ordina per data
+        record.data[series].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        store.put(record);
+    };
+
+    // 4. Aggiorna spunta
+    updateExerciseCheck(exId);
 }
 
 
-    // aggiorna UI
-    loadLastKg(ex_id);
-    updateExerciseCheck(ex_id, findExerciseById(ex_id).series);
-}
 
 /* ============================
    CARICA ULTIMO KG
@@ -202,55 +240,92 @@ async function loadLastKg(exId) {
 
     const data = await res.json();
 
+    // 1. Aggiorna UI
     for (let s = 1; s <= exercise.series; s++) {
         const span = document.getElementById(`lastkg-${exId}-${s}`);
         if (!span) continue;
 
         const entries = data.filter(d => d.series === s);
+
         if (entries.length === 0) {
             span.textContent = "";
             continue;
         }
 
+        // Ordina per data
+        entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+
         const last = entries[entries.length - 1];
         span.textContent = `Ultimo: ${last.kg}kg (${last.date})`;
     }
 
+    // 2. Sincronizza IndexedDB
+    await openDB();
+    const tx = db.transaction("kgHistory", "readwrite");
+    const store = tx.objectStore("kgHistory");
+
+    const record = { exId, data: {} };
+
+    data.forEach(row => {
+        if (!record.data[row.series]) record.data[row.series] = [];
+        record.data[row.series].push({ kg: row.kg, date: row.date });
+
+        // Ordina per data
+        record.data[row.series].sort((a, b) => new Date(a.date) - new Date(b.date));
+    });
+
+    store.put(record);
+
     updateExerciseCheck(exId);
 }
-
 /* ============================
-   SPUNTA ✔️
+   SPUNTA ✔️ (IndexedDB)
 ============================ */
-async function updateExerciseCheck(ex_id, totalSeries) {
-    const today = new Date().toISOString().split("T")[0];
+async function updateExerciseCheck(exId) {
+    await openDB();
 
-    const { data, error } = await supabase
-        .from("kg_history")
-        .select("series, date")
-        .eq("ex_id", ex_id)
-        .eq("date", today);
+    const tx = db.transaction("kgHistory", "readonly");
+    const store = tx.objectStore("kgHistory");
 
-    if (error) {
-        console.error("Errore updateExerciseCheck:", error);
-        return;
-    }
+    store.get(exId).onsuccess = (event) => {
+        const record = event.target.result;
+        const today = getTodayLocalDate(); // 👈 FIX: data locale
 
-    const checkSpan = document.getElementById(`check-${ex_id}`);
+        const exercise = findExerciseById(exId);
+        if (!exercise) return;
 
-    if (!data || data.length === 0) {
-        if (checkSpan) checkSpan.textContent = "";
-        return;
-    }
+        let completed = 0;
 
-    const completedSeries = new Set(data.map(row => row.series));
+        if (record && record.data) {
+            for (let s = 1; s <= exercise.series; s++) {
+                const seriesData = record.data[s];
+                if (!seriesData || seriesData.length === 0) continue;
 
-    if (completedSeries.size === totalSeries) {
-        checkSpan.textContent = "✔️";
-    } else {
-        checkSpan.textContent = "";
-    }
+                // ⭐ ORDINA PER DATA (FIX DECISIVA)
+                seriesData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                const last = seriesData[seriesData.length - 1];
+
+                // ⭐ CONFRONTO CON DATA LOCALE (NON UTC)
+                if (last.date === today) {
+                    completed++;
+                }
+            }
+        }
+
+        const checkSpan = document.getElementById(`check-${exId}`);
+        if (!checkSpan) return;
+
+        if (completed === exercise.series) {
+            checkSpan.textContent = "✔️";
+            checkSpan.classList.add("done");
+        } else {
+            checkSpan.textContent = "";
+            checkSpan.classList.remove("done");
+        }
+    };
 }
+
 
 /* ============================
    TROVA ESERCIZIO PER ID
@@ -323,44 +398,80 @@ function enterEditMode(day) {
 /* ============================
    SALVA MODIFICHE SINGOLO EX
 ============================ */
-function saveEditMode(exId, day) {
-    const ex = findExerciseById(exId);
-    if (!ex) return;
+async function saveEditMode(exId, day) {
+    const nameEl = document.getElementById(`edit-name-${exId}`);
+    const seriesEl = document.getElementById(`edit-series-${exId}`);
+    const repsEl = document.getElementById(`edit-reps-${exId}`);
+    const restEl = document.getElementById(`edit-rest-${exId}`);
 
-    ex.name = document.getElementById(`edit-name-${exId}`).value;
-    ex.series = parseInt(document.getElementById(`edit-series-${exId}`).value);
-    ex.reps = parseInt(document.getElementById(`edit-reps-${exId}`).value);
-    ex.rest = parseInt(document.getElementById(`edit-rest-${exId}`).value);
+    const name = nameEl ? nameEl.value.trim() : "";
+    const series = seriesEl ? parseInt(seriesEl.value) : null;
+    const reps = repsEl ? parseInt(repsEl.value) : null;
+    const rest = restEl ? parseInt(restEl.value) : null;
 
+    await fetch(`${SUPABASE_URL}/rest/v1/exercises?id=eq.${exId}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({ name, series, reps, rest })
+    });
+
+    // ricarica dati da DB e torna alla vista normale
+    await loadExercisesFromDB();
     loadDay(day);
 }
 
 /* ============================
    AGGIUNGI NUOVO ESERCIZIO
 ============================ */
-function addNewExercise(day) {
-    const newEx = {
-        id: newId(),
-        name: "Nuovo esercizio",
-        series: 3,
-        reps: 10,
-        rest: 60
-    };
+async function addNewExercise(day) {
+    const newId = Date.now(); // id numerico fisso
 
-    workouts[day].push(newEx);
+    await fetch(`${SUPABASE_URL}/rest/v1/exercises`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({
+            id: newId,
+            day: day,
+            name: "Nuovo esercizio",
+            series: 3,
+            reps: 10,
+            rest: 60
+        })
+    });
+
+    await loadExercisesFromDB();
     enterEditMode(day);
 }
+
+
 
 /* ============================
    ELIMINA ESERCIZIO
 ============================ */
-function deleteExerciseById(exId, day) {
-    workouts[day] = workouts[day].filter(ex => ex.id !== exId);
+async function deleteExerciseById(exId, day) {
+    await fetch(`${SUPABASE_URL}/rest/v1/exercises?id=eq.${exId}`, {
+        method: "DELETE",
+        headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+        }
+    });
+
+    await loadExercisesFromDB();
     enterEditMode(day);
 }
 
+
 /* ============================
-   TIMER CON MILLISECONDI
+   TIMER
 ============================ */
 function startTimer(restSeconds, btn) {
     const seriesDiv = btn.closest(".series");
@@ -414,25 +525,36 @@ function resetTimer(restSeconds, btn) {
 /* ============================
    SALVA TUTTO (EDIT MODE)
 ============================ */
-function saveAllExercises(day) {
+async function saveAllExercises(day) {
     const exercises = workouts[day];
 
-    exercises.forEach((ex) => {
+    for (const ex of exercises) {
         const nameInput = document.getElementById(`edit-name-${ex.id}`);
         const seriesInput = document.getElementById(`edit-series-${ex.id}`);
         const repsInput = document.getElementById(`edit-reps-${ex.id}`);
         const restInput = document.getElementById(`edit-rest-${ex.id}`);
 
-        if (nameInput) ex.name = nameInput.value.trim();
-        if (seriesInput) ex.series = parseInt(seriesInput.value);
-        if (repsInput) ex.reps = parseInt(repsInput.value);
-        if (restInput) ex.rest = parseInt(restInput.value);
-    });
+        const name = nameInput ? nameInput.value.trim() : ex.name;
+        const series = seriesInput ? parseInt(seriesInput.value) : ex.series;
+        const reps = repsInput ? parseInt(repsInput.value) : ex.reps;
+        const rest = restInput ? parseInt(restInput.value) : ex.rest;
 
-    localStorage.setItem("workouts", JSON.stringify(workouts));
+        await fetch(`${SUPABASE_URL}/rest/v1/exercises?id=eq.${ex.id}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "apikey": SUPABASE_KEY,
+                "Authorization": `Bearer ${SUPABASE_KEY}`
+            },
+            body: JSON.stringify({ name, series, reps, rest })
+        });
+    }
 
+    await loadExercisesFromDB();
     loadDay(day);
 }
+
+
 
 /* ============================
    RICARICA KG NEGLI INPUT
@@ -465,10 +587,24 @@ async function loadKgInputs(exId) {
     }
 }
 
+function getTodayLocalDate() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`; // YYYY-MM-DD locale
+}
+
+
 /* ============================
    RICARICA TUTTO ALL’AVVIO
 ============================ */
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    await openDB();
+
+    // 👇 ORA: carica gli esercizi da Supabase
+    await loadExercisesFromDB();
+
     const today = new Date().getDay();
     const day = today === 0 ? 1 : today;
 
@@ -482,34 +618,5 @@ document.addEventListener("DOMContentLoaded", () => {
                 updateExerciseCheck(ex.id);
             });
         }
-    }, 50);
-});
-
-async function loadAllLatestKg() {
-    for (const d in workouts) {
-        for (const ex of workouts[d]) {
-            await loadKgInputs(ex.id);
-            await loadLastKg(ex.id);
-            await updateExerciseCheck(ex.id);
-        }
-    }
-}
-
-
-document.addEventListener("DOMContentLoaded", () => {
-    loadDay(1);
-
-    setTimeout(() => {
-        loadAllLatestKg();
-    }, 300);
-});
-
-document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-        for (const d in workouts) {
-            workouts[d].forEach(ex => {
-                updateExerciseCheck(ex.id, ex.series);
-            });
-        }
-    }
+    }, 150);
 });
