@@ -219,7 +219,8 @@ async function saveKg(exId, series) {
     };
 
     // 4. Aggiorna spunta
-    await updateExerciseCheck(exId);
+    updateExerciseCheck(exId);
+}
 
 
 
@@ -275,60 +276,55 @@ async function loadLastKg(exId) {
 
     store.put(record);
 
-    await updateExerciseCheck(exId);
-
+    updateExerciseCheck(exId);
 }
 /* ============================
    SPUNTA ✔️ (IndexedDB)
 ============================ */
-function updateExerciseCheck(exId) {
-    return new Promise(async (resolve) => {
-        await openDB();
+async function updateExerciseCheck(exId) {
+    await openDB();
 
-        const tx = db.transaction("kgHistory", "readonly");
-        const store = tx.objectStore("kgHistory");
+    const tx = db.transaction("kgHistory", "readonly");
+    const store = tx.objectStore("kgHistory");
 
-        const request = store.get(exId);
+    store.get(exId).onsuccess = (event) => {
+        const record = event.target.result;
+        const today = getTodayLocalDate(); // 👈 FIX: data locale
 
-        request.onsuccess = () => {
-            const record = request.result;
-            const today = getTodayLocalDate();
-            const exercise = findExerciseById(exId);
+        const exercise = findExerciseById(exId);
+        if (!exercise) return;
 
-            if (!exercise) return resolve();
+        let completed = 0;
 
-            let completed = 0;
+        if (record && record.data) {
+            for (let s = 1; s <= exercise.series; s++) {
+                const seriesData = record.data[s];
+                if (!seriesData || seriesData.length === 0) continue;
 
-            if (record && record.data) {
-                for (let s = 1; s <= exercise.series; s++) {
-                    const seriesData = record.data[s];
-                    if (!seriesData || seriesData.length === 0) continue;
+                // ⭐ ORDINA PER DATA (FIX DECISIVA)
+                seriesData.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-                    seriesData.sort((a, b) => new Date(a.date) - new Date(b.date));
-                    const last = seriesData[seriesData.length - 1];
+                const last = seriesData[seriesData.length - 1];
 
-                    if (last.date === today) {
-                        completed++;
-                    }
+                // ⭐ CONFRONTO CON DATA LOCALE (NON UTC)
+                if (last.date === today) {
+                    completed++;
                 }
             }
+        }
 
-            const checkSpan = document.getElementById(`check-${exId}`);
-            if (checkSpan) {
-                if (completed === exercise.series) {
-                    checkSpan.textContent = "✔️";
-                    checkSpan.classList.add("done");
-                } else {
-                    checkSpan.textContent = "";
-                    checkSpan.classList.remove("done");
-                }
-            }
+        const checkSpan = document.getElementById(`check-${exId}`);
+        if (!checkSpan) return;
 
-            resolve();
-        };
-    });
+        if (completed === exercise.series) {
+            checkSpan.textContent = "✔️";
+            checkSpan.classList.add("done");
+        } else {
+            checkSpan.textContent = "";
+            checkSpan.classList.remove("done");
+        }
+    };
 }
-
 
 
 /* ============================
