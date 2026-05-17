@@ -40,6 +40,9 @@ function newId() {
    WORKOUTS
 ============================ */
 let workouts = { 1: [], 2: [], 3: [] };
+let currentDay = 1;
+let openExerciseId = null;
+
 
 
 function loadWorkoutsFromStorage() {
@@ -95,7 +98,15 @@ async function loadExercisesFromDB() {
    CARICA GIORNO
 ============================ */
 function loadDay(day) {
+    // Salva il giorno attivo
+    currentDay = day;
+
     const container = document.getElementById("exercise-list");
+
+    // Effetto fade-out prima del reload
+    container.classList.remove("show");
+    container.classList.add("fade");
+
     container.innerHTML = "";
 
     workouts[day].forEach((ex) => {
@@ -158,15 +169,35 @@ function loadDay(day) {
     editBtn.className = "edit-btn";
     editBtn.onclick = () => enterEditMode(day);
     container.appendChild(editBtn);
-}
 
+    // 🔥 Riapri l’esercizio che era aperto
+    if (openExerciseId) {
+        const body = document.getElementById(`exercise-body-${openExerciseId}`);
+        if (body) body.style.display = "block";
+    }
+
+    // 🔥 Fade-in fluido
+    setTimeout(() => {
+        container.classList.add("show");
+    }, 20);
+}
 /* ============================
-   TOGGLE
+   TOCGGLE EXERCISE
 ============================ */
 function toggleExercise(id) {
     const body = document.getElementById(`exercise-body-${id}`);
-    body.style.display = body.style.display === "none" ? "block" : "none";
+
+    if (!body) return;
+
+    if (body.style.display === "none") {
+        body.style.display = "block";
+        openExerciseId = id; // 👈 salva quale esercizio è aperto
+    } else {
+        body.style.display = "none";
+        openExerciseId = null;
+    }
 }
+
 
 /* ============================
    SALVATAGGIO KG (REST API)
@@ -222,6 +253,11 @@ async function saveKg(exId, series) {
             const putReq = store.put(record);
             putReq.onsuccess = () => resolve();
         };
+        // 👇 Ricarica l’intero giorno dopo il salvataggio
+        loadDay(currentDay);
+        scrollToExercise(exId);
+
+
     });
 }
 
