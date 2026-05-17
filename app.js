@@ -98,15 +98,14 @@ async function loadExercisesFromDB() {
    CARICA GIORNO
 ============================ */
 function loadDay(day) {
-    // Salva il giorno attivo
     currentDay = day;
 
     const container = document.getElementById("exercise-list");
 
-    // Effetto fade-out prima del reload
-    container.classList.remove("show");
-    container.classList.add("fade");
+    // Fade-out immediato (contenuto invisibile ma presente)
+    container.style.opacity = "0";
 
+    // Ricostruzione invisibile
     container.innerHTML = "";
 
     workouts[day].forEach((ex) => {
@@ -176,11 +175,14 @@ function loadDay(day) {
         if (body) body.style.display = "block";
     }
 
-    // 🔥 Fade-in fluido
+    // 🔥 Fade-in ultra fluido
     setTimeout(() => {
-        container.classList.add("show");
-    }, 5);
+        container.style.transition = "opacity 0.15s ease-in-out";
+        container.style.opacity = "1";
+    }, 10);
 }
+
+
 /* ============================
    TOCGGLE EXERCISE
 ============================ */
@@ -197,6 +199,19 @@ function toggleExercise(id) {
         openExerciseId = null;
     }
 }
+/* ============================
+   SCROLL TO EXERCISE
+============================ */
+function scrollToExercise(id) {
+    const el = document.getElementById(`exercise-body-${id}`);
+    if (!el) return;
+
+    // Delay minimo sicuro per permettere al DOM di montarsi
+    setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 40);
+}
+
 
 
 /* ============================

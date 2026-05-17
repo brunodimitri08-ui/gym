@@ -232,10 +232,14 @@ html, body {
 
 .fade {
     opacity: 0;
-    transition: opacity 0.25s ease-in-out;
+    transition: opacity 0.20s ease-in-out;
 }
 
 .fade.show {
     opacity: 1;
+}
+
+#exercise-list {
+    transition: opacity 0.15s ease-in-out;
 }
 
