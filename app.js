@@ -176,9 +176,9 @@ async function saveKg(exId, series) {
     const kgValue = input.value;
     if (!kgValue) return;
 
-    const today = getTodayLocalDate(); // 👈 FIX: data locale
+    const today = getTodayLocalDate();
 
-    // 1. Salva su Supabase
+    // Salva su Supabase
     await fetch(`${SUPABASE_URL}/rest/v1/kg_history`, {
         method: "POST",
         headers: {
@@ -190,37 +190,41 @@ async function saveKg(exId, series) {
         body: JSON.stringify({
             ex_id: exId,
             series: series,
-            kg: parseInt(kgValue),
+            kg: parseFloat(kgValue),
             date: today
         })
     });
 
-    // 2. Aggiorna SUBITO la UI
+    // Aggiorna SUBITO la UI
     const span = document.getElementById(`lastkg-${exId}-${series}`);
     if (span) {
         span.textContent = `Ultimo: ${kgValue}kg (${today})`;
     }
 
-    // 3. Aggiorna IndexedDB
-    await openDB();
-    const tx = db.transaction("kgHistory", "readwrite");
-    const store = tx.objectStore("kgHistory");
+    // Aggiorna la spunta basandosi SOLO sulla UI
+    await updateExerciseCheck(exId);
 
-    store.get(exId).onsuccess = (event) => {
-        const record = event.target.result || { exId, data: {} };
+    // Aggiorna IndexedDB (solo storico, NON UI)
+    await new Promise(async (resolve) => {
+        await openDB();
+        const tx = db.transaction("kgHistory", "readwrite");
+        const store = tx.objectStore("kgHistory");
 
-        if (!record.data[series]) record.data[series] = [];
-        record.data[series].push({ kg: parseInt(kgValue), date: today });
+        const req = store.get(exId);
+        req.onsuccess = () => {
+            const record = req.result || { exId, data: {} };
 
-        // Ordina per data
-        record.data[series].sort((a, b) => new Date(a.date) - new Date(b.date));
+            if (!record.data[series]) record.data[series] = [];
+            record.data[series].push({ kg: parseFloat(kgValue), date: today });
 
-        store.put(record);
-    };
+            record.data[series].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // 4. Aggiorna spunta
-    updateExerciseCheck(exId);
+            const putReq = store.put(record);
+            putReq.onsuccess = () => resolve();
+        };
+    });
 }
+
 
 
 
@@ -276,55 +280,40 @@ async function loadLastKg(exId) {
 
     store.put(record);
 
-    updateExerciseCheck(exId);
+    await updateExerciseCheck(exId);
+
 }
 /* ============================
    SPUNTA ✔️ (IndexedDB)
 ============================ */
 async function updateExerciseCheck(exId) {
-    await openDB();
+    const exercise = findExerciseById(exId);
+    if (!exercise) return;
 
-    const tx = db.transaction("kgHistory", "readonly");
-    const store = tx.objectStore("kgHistory");
+    let completed = 0;
+    const today = getTodayLocalDate();
 
-    store.get(exId).onsuccess = (event) => {
-        const record = event.target.result;
-        const today = getTodayLocalDate(); // 👈 FIX: data locale
+    for (let s = 1; s <= exercise.series; s++) {
+        const span = document.getElementById(`lastkg-${exId}-${s}`);
+        if (!span) continue;
 
-        const exercise = findExerciseById(exId);
-        if (!exercise) return;
-
-        let completed = 0;
-
-        if (record && record.data) {
-            for (let s = 1; s <= exercise.series; s++) {
-                const seriesData = record.data[s];
-                if (!seriesData || seriesData.length === 0) continue;
-
-                // ⭐ ORDINA PER DATA (FIX DECISIVA)
-                seriesData.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                const last = seriesData[seriesData.length - 1];
-
-                // ⭐ CONFRONTO CON DATA LOCALE (NON UTC)
-                if (last.date === today) {
-                    completed++;
-                }
-            }
+        if (span.textContent.includes(today)) {
+            completed++;
         }
+    }
 
-        const checkSpan = document.getElementById(`check-${exId}`);
-        if (!checkSpan) return;
+    const checkSpan = document.getElementById(`check-${exId}`);
+    if (!checkSpan) return;
 
-        if (completed === exercise.series) {
-            checkSpan.textContent = "✔️";
-            checkSpan.classList.add("done");
-        } else {
-            checkSpan.textContent = "";
-            checkSpan.classList.remove("done");
-        }
-    };
+    if (completed === exercise.series) {
+        checkSpan.textContent = "✔️";
+        checkSpan.classList.add("done");
+    } else {
+        checkSpan.textContent = "";
+        checkSpan.classList.remove("done");
+    }
 }
+
 
 
 /* ============================
@@ -422,6 +411,7 @@ async function saveEditMode(exId, day) {
     // ricarica dati da DB e torna alla vista normale
     await loadExercisesFromDB();
     loadDay(day);
+
 }
 
 /* ============================
