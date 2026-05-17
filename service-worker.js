@@ -1,12 +1,10 @@
 const CACHE_NAME = "workout-cache-v1";
 const ASSETS = [
-  "/gym/",
-  "/gym/index.html",
-  "/gym/style.css",
-  "/gym/app.js",
-  "/gym/manifest.json",
-  "/gym/icon-192.png",
-  "/gym/icon-512.png"
+  "/index.html",
+  "/style.css",
+  "/app.js",
+  "/manifest.json",
+  "/icon-512.png"
 ];
 
 self.addEventListener("install", event => {
