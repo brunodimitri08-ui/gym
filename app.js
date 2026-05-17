@@ -179,7 +179,7 @@ function loadDay(day) {
     // 🔥 Fade-in fluido
     setTimeout(() => {
         container.classList.add("show");
-    }, 20);
+    }, 5);
 }
 /* ============================
    TOCGGLE EXERCISE
@@ -644,5 +644,5 @@ document.addEventListener("DOMContentLoaded", async () => {
                 updateExerciseCheck(ex.id);
             });
         }
-    }, 150);
+    }, 50);
 });
