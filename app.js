@@ -190,7 +190,7 @@ async function saveKg(exId, series) {
         body: JSON.stringify({
             ex_id: exId,
             series: series,
-            kg: parseFloat(kgValue),
+            kg: parseInt(kgValue),
             date: today
         })
     });
@@ -210,7 +210,7 @@ async function saveKg(exId, series) {
         const record = event.target.result || { exId, data: {} };
 
         if (!record.data[series]) record.data[series] = [];
-        record.data[series].push({ kg: parseFloat(kgValue), date: today });
+        record.data[series].push({ kg: parseInt(kgValue), date: today });
 
         // Ordina per data
         record.data[series].sort((a, b) => new Date(a.date) - new Date(b.date));
