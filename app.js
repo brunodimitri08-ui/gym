@@ -190,7 +190,7 @@ async function saveKg(exId, series) {
         body: JSON.stringify({
             ex_id: exId,
             series: series,
-            kg: parseInt(kgValue),
+            kg: parseFloat(kgValue),
             date: today
         })
     });
@@ -210,7 +210,7 @@ async function saveKg(exId, series) {
         const record = event.target.result || { exId, data: {} };
 
         if (!record.data[series]) record.data[series] = [];
-        record.data[series].push({ kg: parseInt(kgValue), date: today });
+        record.data[series].push({ kg: parseFloat(kgValue), date: today });
 
         // Ordina per data
         record.data[series].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -219,8 +219,7 @@ async function saveKg(exId, series) {
     };
 
     // 4. Aggiorna spunta
-    updateExerciseCheck(exId);
-}
+    await updateExerciseCheck(exId);
 
 
 
@@ -276,55 +275,60 @@ async function loadLastKg(exId) {
 
     store.put(record);
 
-    updateExerciseCheck(exId);
+    await updateExerciseCheck(exId);
+
 }
 /* ============================
    SPUNTA ✔️ (IndexedDB)
 ============================ */
-async function updateExerciseCheck(exId) {
-    await openDB();
+function updateExerciseCheck(exId) {
+    return new Promise(async (resolve) => {
+        await openDB();
 
-    const tx = db.transaction("kgHistory", "readonly");
-    const store = tx.objectStore("kgHistory");
+        const tx = db.transaction("kgHistory", "readonly");
+        const store = tx.objectStore("kgHistory");
 
-    store.get(exId).onsuccess = (event) => {
-        const record = event.target.result;
-        const today = getTodayLocalDate(); // 👈 FIX: data locale
+        const request = store.get(exId);
 
-        const exercise = findExerciseById(exId);
-        if (!exercise) return;
+        request.onsuccess = () => {
+            const record = request.result;
+            const today = getTodayLocalDate();
+            const exercise = findExerciseById(exId);
 
-        let completed = 0;
+            if (!exercise) return resolve();
 
-        if (record && record.data) {
-            for (let s = 1; s <= exercise.series; s++) {
-                const seriesData = record.data[s];
-                if (!seriesData || seriesData.length === 0) continue;
+            let completed = 0;
 
-                // ⭐ ORDINA PER DATA (FIX DECISIVA)
-                seriesData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            if (record && record.data) {
+                for (let s = 1; s <= exercise.series; s++) {
+                    const seriesData = record.data[s];
+                    if (!seriesData || seriesData.length === 0) continue;
 
-                const last = seriesData[seriesData.length - 1];
+                    seriesData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    const last = seriesData[seriesData.length - 1];
 
-                // ⭐ CONFRONTO CON DATA LOCALE (NON UTC)
-                if (last.date === today) {
-                    completed++;
+                    if (last.date === today) {
+                        completed++;
+                    }
                 }
             }
-        }
 
-        const checkSpan = document.getElementById(`check-${exId}`);
-        if (!checkSpan) return;
+            const checkSpan = document.getElementById(`check-${exId}`);
+            if (checkSpan) {
+                if (completed === exercise.series) {
+                    checkSpan.textContent = "✔️";
+                    checkSpan.classList.add("done");
+                } else {
+                    checkSpan.textContent = "";
+                    checkSpan.classList.remove("done");
+                }
+            }
 
-        if (completed === exercise.series) {
-            checkSpan.textContent = "✔️";
-            checkSpan.classList.add("done");
-        } else {
-            checkSpan.textContent = "";
-            checkSpan.classList.remove("done");
-        }
-    };
+            resolve();
+        };
+    });
 }
+
 
 
 /* ============================
